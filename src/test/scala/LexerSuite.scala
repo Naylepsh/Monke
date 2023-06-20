@@ -31,40 +31,46 @@ class LexerSuite extends ScalaCheckSuite:
     assertEquals(tokens, expected)
 
   property("Can tokenize a program"):
-    import LexerSuite.{ variableNameGen, isValidVariableName, VariableName }
+    import LexerSuite.{ variableNameGen, isValidVariableName }
 
-    forAll(variableNameGen, variableNameGen, variableNameGen) {
-      (a: VariableName, b: VariableName, funcName: VariableName) =>
-        (isValidVariableName(a.value)
-          && isValidVariableName(b.value)
-          && isValidVariableName(funcName.value)) ==> {
-          val input = s"""let ${a.value} = 5;
-            |let ${b.value} = 10;
+    forAll(
+      variableNameGen,
+      variableNameGen,
+      variableNameGen
+    ) {
+      (var1: String, var2: String, funcName: String) =>
+        (
+          isValidVariableName(var1)
+            && isValidVariableName(var2)
+            && isValidVariableName(funcName)
+        ) ==> {
+          val input = s"""let $var1 = 5;
+            |let $var2 = 10;
             |
-            |let ${funcName.value} = fn(x, y) {
+            |let $funcName = fn(x, y) {
             |   x + y;
             |};
             |
-            |let result = add(${a.value}, ${b.value});
+            |let result = $funcName($var1, $var2);
             """.stripMargin
           val expected = List(
-            // let five = 5;
+            // let var1 = 5;
             Token.Let,
-            Token.Identifier(a.value),
+            Token.Identifier(var1),
             Token.Assign,
             Token.Integer("5"),
             Token.Semicolon,
-            // let ten = 10;
+            // let var2 = 10;
             Token.Let,
-            Token.Identifier(b.value),
+            Token.Identifier(var2),
             Token.Assign,
             Token.Integer("10"),
             Token.Semicolon,
-            // let add = fn(x, y) {
+            // let funcName = fn(x, y) {
             //  x + y;
             // };
             Token.Let,
-            Token.Identifier(funcName.value),
+            Token.Identifier(funcName),
             Token.Assign,
             Token.Func,
             Token.LeftParen,
@@ -79,15 +85,15 @@ class LexerSuite extends ScalaCheckSuite:
             Token.Semicolon,
             Token.RightBrace,
             Token.Semicolon,
-            // let result = add(five, ten);
+            // let result = funcName(var1, var2);
             Token.Let,
             Token.Identifier("result"),
             Token.Assign,
-            Token.Identifier(funcName.value),
+            Token.Identifier(funcName),
             Token.LeftParen,
-            Token.Identifier(a.value),
+            Token.Identifier(var1),
             Token.Comma,
-            Token.Identifier(b.value),
+            Token.Identifier(var2),
             Token.RightParen,
             Token.Semicolon,
             Token.EOF
@@ -159,9 +165,12 @@ class LexerSuite extends ScalaCheckSuite:
     assertEquals(tokens, expected)
 
 object LexerSuite:
-  case class VariableName(value: String)
+  val validChars = (('A' to 'Z') ++ ('a' to 'z') ++ Seq('_')).toSet
+  val variableNameGen =
+    for
+      n    <- Gen.choose(1, 16)
+      list <- Gen.listOfN(n, Gen.oneOf(validChars))
+    yield list.mkString("")
 
   def isValidVariableName(str: String): Boolean =
-    str.filter(_.isLetter) == str && !str.isEmpty()
-  val variableNameGen =
-    Arbitrary.arbitrary[String].suchThat(isValidVariableName).map(VariableName(_))
+    str.filter(validChars.contains) == str && str.length > 0
