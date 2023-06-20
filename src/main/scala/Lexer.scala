@@ -27,15 +27,15 @@ object Lexer:
       case '{' :: rest                       => Token.LeftBrace  -> rest
       case '}' :: rest                       => Token.RightBrace -> rest
       case char :: rest if char.isWhitespace => nextToken(eatWhitespace(rest))
-      case char :: rest if char.isDigit =>
-        val (int, leftoverInput) = peekInteger(char :: rest)
+      case all @ char :: _ if char.isDigit =>
+        val (int, leftoverInput) = peekInteger(all)
         Token.Integer(int) -> leftoverInput
-      case char :: rest if isIdentifier(char) =>
-        val (identifier, leftoverChars) = peekIdentifier(char :: rest)
+      case all @ char :: _ if identifierChars.contains(char) =>
+        val (identifier, leftoverChars) = peekIdentifier(all)
         val token = identifier match
-          case "let"  => Token.Let
-          case "fn" => Token.Func
-          case other  => Token.Identifier(other)
+          case "let" => Token.Let
+          case "fn"  => Token.Func
+          case other => Token.Identifier(other)
         token -> leftoverChars
       case _ => Token.Illegal -> input
 
@@ -45,10 +45,9 @@ object Lexer:
       case char :: rest if char.isWhitespace => eatWhitespace(rest)
       case rest                              => rest
 
-  private def isIdentifier(char: Char) = char.isLetter || char == '_'
-
-  private val peekInteger    = peekText(_.isDigit)
-  private val peekIdentifier = peekText(isIdentifier)
+  private val identifierChars = (('a' to 'z') ++ ('A' to 'Z') ++ Seq('_')).toSet
+  private val peekInteger     = peekText(_.isDigit)
+  private val peekIdentifier  = peekText(identifierChars.contains)
 
   def peekText(predicate: Char => Boolean)(input: List[Char])
       : (String, List[Char]) =
