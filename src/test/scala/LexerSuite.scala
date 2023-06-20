@@ -1,8 +1,4 @@
-import munit.ScalaCheckSuite
-import org.scalacheck.Gen
-import org.scalacheck.Prop.*
-
-class LexerSuite extends ScalaCheckSuite:
+class LexerSuite extends munit.FunSuite:
   test("Can get token from a simple string of symbols"):
     val input    = "=+(){},;".toList
     val expected = (Token.Assign, input.tail)

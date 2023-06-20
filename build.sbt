@@ -8,6 +8,5 @@ lazy val root = project
     name                                   := "monke",
     version                                := "0.1.0-SNAPSHOT",
     scalaVersion                           := scala3Version,
-    libraryDependencies += "org.scalameta" %% "munit"            % munitVersion % Test,
-    libraryDependencies += "org.scalameta" %% "munit-scalacheck" % munitVersion % Test
+    libraryDependencies += "org.scalameta" %% "munit" % munitVersion % Test
   )
