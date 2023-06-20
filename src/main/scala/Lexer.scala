@@ -17,31 +17,37 @@ enum Token:
 object Lexer:
   def nextToken(input: List[Char]): (Token, List[Char]) =
     input match
-      case Nil         => Token.EOF        -> input
-      case '=' :: rest => Token.Assign     -> rest
-      case '+' :: rest => Token.Plus       -> rest
-      case ',' :: rest => Token.Comma      -> rest
-      case ';' :: rest => Token.Semicolon  -> rest
-      case '(' :: rest => Token.LeftParen  -> rest
-      case ')' :: rest => Token.RightParen -> rest
-      case '{' :: rest => Token.LeftBrace  -> rest
-      case '}' :: rest => Token.RightBrace -> rest
-      case char :: rest if isInteger(char) =>
+      case Nil                               => Token.EOF        -> input
+      case '=' :: rest                       => Token.Assign     -> rest
+      case '+' :: rest                       => Token.Plus       -> rest
+      case ',' :: rest                       => Token.Comma      -> rest
+      case ';' :: rest                       => Token.Semicolon  -> rest
+      case '(' :: rest                       => Token.LeftParen  -> rest
+      case ')' :: rest                       => Token.RightParen -> rest
+      case '{' :: rest                       => Token.LeftBrace  -> rest
+      case '}' :: rest                       => Token.RightBrace -> rest
+      case char :: rest if char.isWhitespace => nextToken(eatWhitespace(rest))
+      case char :: rest if char.isDigit =>
         val (int, leftoverInput) = peekInteger(char :: rest)
         Token.Integer(int) -> leftoverInput
       case char :: rest if isIdentifier(char) =>
         val (identifier, leftoverChars) = peekIdentifier(char :: rest)
         val token = identifier match
           case "let"  => Token.Let
-          case "func" => Token.Func
+          case "fn" => Token.Func
           case other  => Token.Identifier(other)
         token -> leftoverChars
       case _ => Token.Illegal -> input
 
-  private def isInteger(char: Char)    = char.isDigit
+  private def eatWhitespace(input: List[Char]): List[Char] =
+    input match
+      case Nil                               => Nil
+      case char :: rest if char.isWhitespace => eatWhitespace(rest)
+      case rest                              => rest
+
   private def isIdentifier(char: Char) = char.isLetter || char == '_'
 
-  private val peekInteger    = peekText(isInteger)
+  private val peekInteger    = peekText(_.isDigit)
   private val peekIdentifier = peekText(isIdentifier)
 
   def peekText(predicate: Char => Boolean)(input: List[Char])
