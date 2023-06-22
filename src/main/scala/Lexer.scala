@@ -34,7 +34,7 @@ object Lexer:
           case "false"  => Token.False
           case other    => Token.Identifier(other)
         token -> leftoverChars
-      case other :: rest => 
+      case other :: rest =>
         println(s"Illegal char: $other")
         Token.Illegal -> rest
 
