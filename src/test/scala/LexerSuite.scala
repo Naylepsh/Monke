@@ -84,3 +84,60 @@ class LexerSuite extends munit.FunSuite:
     val tokens = Lexer.tokenize(input)
 
     assertEquals(tokens, expected)
+
+  test("Can tokenize program2"):
+    val input = """!-/*5;
+    |5 < 10 > 5;
+    |
+    |if (5 < 10) {
+    |  return true;
+    |} else {
+    |  return false;
+    |}
+    |
+    |10 == 10;
+    |10 != 9;""".stripMargin
+    val expected = List(
+      Token.Bang,
+      Token.Minus,
+      Token.Slash,
+      Token.Asterisk,
+      Token.Integer("5"),
+      Token.Semicolon,
+      Token.Integer("5"),
+      Token.LesserThan,
+      Token.Integer("10"),
+      Token.GreaterThan,
+      Token.Integer("5"),
+      Token.Semicolon,
+      Token.If,
+      Token.LeftParen,
+      Token.Integer("5"),
+      Token.LesserThan,
+      Token.Integer("10"),
+      Token.RightParen,
+      Token.LeftBrace,
+      Token.Return,
+      Token.True,
+      Token.Semicolon,
+      Token.RightBrace,
+      Token.Else,
+      Token.LeftBrace,
+      Token.Return,
+      Token.False,
+      Token.Semicolon,
+      Token.RightBrace,
+      Token.Integer("10"),
+      Token.Equal,
+      Token.Integer("10"),
+      Token.Semicolon,
+      Token.Integer("10"),
+      Token.NotEqual,
+      Token.Integer("9"),
+      Token.Semicolon,
+      Token.EOF
+    )
+
+    val tokens = Lexer.tokenize(input)
+
+    assertEquals(tokens, expected)
