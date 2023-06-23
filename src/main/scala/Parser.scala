@@ -10,6 +10,7 @@ object Parser:
 
   enum Statement:
     case Let(identifier: String, expression: Expression) extends Statement
+    case Return(expression: Expression)                  extends Statement
 
   type Node = Expression | Statement
 
@@ -39,6 +40,13 @@ object Parser:
                 Statement.Let(identifier, expr) :: ast,
                 errors
               )
+        case all @ Token.Return :: rest =>
+          parseExpression(rest) match
+            case Left(reason) =>
+              val (failedTokens, leftoverTokens) = eatUntilExprEnd(all)
+              doParse(leftoverTokens, ast, reason :: errors)
+            case Right((expr, leftoverTokens)) =>
+              doParse(leftoverTokens, Statement.Return(expr) :: ast, errors)
         case other =>
           val (failedTokens, leftoverTokens) = eatUntilExprEnd(other)
           doParse(
