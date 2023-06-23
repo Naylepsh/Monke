@@ -16,3 +16,14 @@ class ParserSuite extends munit.FunSuite:
     val ast    = parse(tokens)
 
     assertEquals(ast, expected)
+
+  test("Returns parsing error when let statement is not valid"):
+    val input = """let x 5;
+    |let = 10;
+    |let 838383;
+    """.stripMargin
+
+    val tokens = Lexer.tokenize(input)
+    val ast    = parse(tokens)
+
+    assertEquals(ast.left.map(_.length), Left(3))
