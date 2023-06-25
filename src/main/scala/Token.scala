@@ -30,3 +30,35 @@ enum Token:
   case If     extends Token
   case Else   extends Token
   case Return extends Token
+
+object Token:
+  given showToken: Show[Token] with
+    def show(token: Token): String =
+      token match
+        case Illegal                   => "Illegal"
+        case EOF                       => ""
+        case Identifier(value: String) => value
+        case Integer(value: String)    => value
+        case Assign                    => "="
+        case Plus                      => "+"
+        case Minus                     => "-"
+        case Bang                      => "!"
+        case Asterisk                  => "*"
+        case Slash                     => "/"
+        case Equal                     => "=="
+        case NotEqual                  => "!="
+        case GreaterThan               => ">"
+        case LesserThan                => "<"
+        case Comma                     => ","
+        case Semicolon                 => ";"
+        case LeftParen                 => "("
+        case RightParen                => ")"
+        case LeftBrace                 => "{"
+        case RightBrace                => "}"
+        case Func                      => "fn"
+        case Let                       => "let"
+        case True                      => "true"
+        case False                     => "false"
+        case If                        => "if"
+        case Else                      => "else"
+        case Return                    => "return"

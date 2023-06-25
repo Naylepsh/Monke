@@ -1,6 +1,11 @@
+import Token.given
 import Parser.*
+import Expression.given
+import Statement.given
 
 class ParserSuite extends munit.FunSuite:
+  import ParserSuite.*
+
   test("Parse simple chain of assignments"):
     val input = """let x = 5;
     |let y = 10;
@@ -119,3 +124,72 @@ class ParserSuite extends munit.FunSuite:
       val ast    = parse(tokens)
 
       assertEquals(ast, expected)
+
+  test("Operator precendence"):
+    val testCases = List(
+      ("-a * b", "((-a) * b)"),
+      (
+        "!-a",
+        "(!(-a))",
+      ),
+      (
+        "a + b + c",
+        "((a + b) + c)",
+      ),
+      (
+        "a + b - c",
+        "((a + b) - c)",
+      ),
+      (
+        "a * b * c",
+        "((a * b) * c)",
+      ),
+      (
+        "a * b / c",
+        "((a * b) / c)",
+      ),
+      (
+        "a + b / c",
+        "(a + (b / c))",
+      ),
+      (
+        "a + b * c + d / e - f",
+        "(((a + (b * c)) + (d / e)) - f)",
+      ),
+      (
+        "3 + 4; -5 * 5",
+        """(3 + 4)
+        |((-5) * 5)""".stripMargin,
+      ),
+      (
+        "5 > 4 == 3 < 4",
+        "((5 > 4) == (3 < 4))",
+      ),
+      (
+        "5 < 4 != 3 > 4",
+        "((5 < 4) != (3 > 4))",
+      ),
+      (
+        "3 + 4 * 5 == 3 * 1 + 4 * 5",
+        "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+      ),
+      (
+        "3 + 4 * 5 == 3 * 1 + 4 * 5",
+        "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+      )
+    )
+    testCases.foreach: (input, expected) =>
+      val tokens = Lexer.tokenize(input)
+
+      val ast = Parser.parse(tokens)
+
+      assertEquals(ast.map(show), Right(expected))
+
+object ParserSuite:
+  def show(node: Node): String =
+    if node.isInstanceOf[Expression] then
+      Expression.showExpression.show(node.asInstanceOf[Expression])
+    else
+      Statement.showStatement.show(node.asInstanceOf[Statement])
+
+  def show(nodes: List[Node]): String = nodes.map(show).mkString("\n")
