@@ -36,8 +36,6 @@ object Parser:
         case (Token.Asterisk | Token.Slash)         => Product
         case _                                      => Lowest
 
-  private val eatUntilExprEnd = eatUntil(List(Token.EOF, Token.Semicolon))
-
   def parse(tokens: List[Token]): Either[List[ParsingError], List[Node]] =
     @annotation.tailrec
     def doParse(
@@ -133,6 +131,8 @@ object Parser:
           (right, leftoverTokens) =>
             Expression.InfixOperator(left, token, right) -> leftoverTokens
       case token :: _ => Left(ParsingError.NoInfixExpression(token))
+
+  private val eatUntilExprEnd = eatUntil(List(Token.EOF, Token.Semicolon))
 
   private def eatUntil(stopTokens: List[Token])(tokens: List[Token])
       : (List[Token], List[Token]) =
