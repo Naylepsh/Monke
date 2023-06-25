@@ -50,34 +50,33 @@ object Parser:
         if errors.isEmpty then Right(ast.reverse) else Left(errors.reverse)
       // Keep it for now, until the rest of the parsing is not fully fleshed out
       case Token.Semicolon :: rest => parse(rest, ast, errors)
-      case all @ Token.Let
-          :: Token.Identifier(identifier)
-          :: Token.Assign
-          :: rest =>
-        parseExpression(rest, Precedence.Lowest) match
+      case all @ Token.Let :: rest =>
+        parseLetStatement(rest) match
           case Left(reason) =>
-            val (failedTokens, leftoverTokens) = eatUntilExprEnd(all)
-            parse(leftoverTokens, ast, reason :: errors)
-          case Right((expr, leftoverTokens)) =>
-            parse(
-              leftoverTokens,
-              Statement.Let(identifier, expr) :: ast,
-              errors
-            )
+            parse(eatUntilExprEnd(all), ast, reason :: errors)
+          case Right((statement, leftoverTokens)) =>
+            parse(leftoverTokens, statement :: ast, errors)
       case all @ Token.Return :: rest =>
         parseExpression(rest, Precedence.Lowest) match
           case Left(reason) =>
-            val (failedTokens, leftoverTokens) = eatUntilExprEnd(all)
-            parse(leftoverTokens, ast, reason :: errors)
+            parse(eatUntilExprEnd(all), ast, reason :: errors)
           case Right((expr, leftoverTokens)) =>
             parse(leftoverTokens, Statement.Return(expr) :: ast, errors)
       case other =>
         parseExpression(other, Precedence.Lowest) match
           case Left(reason) =>
-            val (failedTokens, leftoverTokens) = eatUntilExprEnd(other)
-            parse(leftoverTokens, ast, reason :: errors)
+            parse(eatUntilExprEnd(other), ast, reason :: errors)
           case Right((expression, leftoverTokens)) =>
             parse(leftoverTokens, Statement.Expr(expression) :: ast, errors)
+
+  private def parseLetStatement(tokens: List[Token]) =
+    tokens match
+      case all @ Token.Identifier(identifier)
+          :: Token.Assign
+          :: rest => parseExpression(rest, Precedence.Lowest).map:
+          (expression, leftoverTokens) =>
+            Statement.Let(identifier, expression) -> leftoverTokens
+      case _ => Left(ParsingError.InvalidLetExpression(tokens))
 
   private def parseExpression(
       tokens: List[Token],
@@ -135,16 +134,12 @@ object Parser:
   private val eatUntilExprEnd = eatUntil(List(Token.EOF, Token.Semicolon))
 
   private def eatUntil(stopTokens: List[Token])(tokens: List[Token])
-      : (List[Token], List[Token]) =
+      : List[Token] =
     @annotation.tailrec
-    def doEat(
-        tokens: List[Token],
-        eaten: List[Token]
-    ): (List[Token], List[Token]) =
+    def doEat(tokens: List[Token]): List[Token] =
       tokens match
-        case Nil => (eaten.reverse, Nil)
-        case token :: rest if stopTokens.contains(token) =>
-          (eaten.reverse, rest)
-        case token :: rest => doEat(rest, token :: eaten)
+        case Nil                                         => Nil
+        case token :: rest if stopTokens.contains(token) => rest
+        case _ :: rest                                   => doEat(rest)
 
-    doEat(tokens, List.empty)
+    doEat(tokens)
