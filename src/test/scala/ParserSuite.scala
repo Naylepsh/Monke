@@ -62,25 +62,60 @@ class ParserSuite extends munit.FunSuite:
     assertEquals(ast, expected)
 
   test("Parse prefix expression"):
-    val input = "!42;"
+    val testCases = List(
+      ("!42;", Token.Bang, Expression.Integer(42)),
+      ("-42;", Token.Minus, Expression.Integer(42))
+    )
+    testCases.foreach: (input, expectedOp, expectedExpr) =>
+      val expected = Right(List(Statement.Expr(Expression.PrefixOperator(
+        expectedOp,
+        expectedExpr
+      ))))
+      val tokens = Lexer.tokenize(input)
+      val ast    = parse(tokens)
+
+      assertEquals(ast, expected)
+
+  test("Parse nested prefix expression"):
+    val input = "!!42;"
     val expected = Right(List(Statement.Expr(Expression.PrefixOperator(
       Token.Bang,
-      Expression.Integer(42)
+      Expression.PrefixOperator(Token.Bang, Expression.Integer(42))
     ))))
-
     val tokens = Lexer.tokenize(input)
     val ast    = parse(tokens)
 
     assertEquals(ast, expected)
 
-  test("Parse prefix expression"):
-    val input = "-42;"
-    val expected = Right(List(Statement.Expr(Expression.PrefixOperator(
-      Token.Minus,
-      Expression.Integer(42)
-    ))))
+  test("Parse infix expression"):
+    val testCases = List(
+      ("5 + 5;", Expression.Integer(5), Token.Plus, Expression.Integer(5)),
+      ("5 - 5;", Expression.Integer(5), Token.Minus, Expression.Integer(5)),
+      ("5 * 5;", Expression.Integer(5), Token.Asterisk, Expression.Integer(5)),
+      ("5 / 5;", Expression.Integer(5), Token.Slash, Expression.Integer(5)),
+      (
+        "5 > 5;",
+        Expression.Integer(5),
+        Token.GreaterThan,
+        Expression.Integer(5)
+      ),
+      (
+        "5 < 5;",
+        Expression.Integer(5),
+        Token.LesserThan,
+        Expression.Integer(5)
+      ),
+      ("5 == 5;", Expression.Integer(5), Token.Equal, Expression.Integer(5)),
+      ("5 != 5;", Expression.Integer(5), Token.NotEqual, Expression.Integer(5))
+    )
 
-    val tokens = Lexer.tokenize(input)
-    val ast    = parse(tokens)
+    testCases.foreach: (input, expectedLeft, expectedOp, expectedRight) =>
+      val expected = Right(List(Statement.Expr(Expression.InfixOperator(
+        expectedLeft,
+        expectedOp,
+        expectedRight
+      ))))
+      val tokens = Lexer.tokenize(input)
+      val ast    = parse(tokens)
 
-    assertEquals(ast, expected)
+      assertEquals(ast, expected)
