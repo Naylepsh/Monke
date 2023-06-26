@@ -23,8 +23,8 @@ object Parser:
     case NoInfixExpression(token: Token)           extends ParsingError
     case UnmatchedCase(tokens: List[Token])        extends ParsingError
 
-  def parse(tokens: List[Token]): Either[List[ParsingError], List[Node]] =
-    parse(tokens, List.empty, List.empty)
+  def parse(tokens: List[Token]): Either[List[ParsingError], Program] =
+    parse(tokens, List.empty, List.empty).map(Program(_))
 
   @annotation.tailrec
   private def parse(

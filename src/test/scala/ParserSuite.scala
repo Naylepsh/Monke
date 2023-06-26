@@ -1,22 +1,22 @@
 import Token.given
+import Show.*
 import Parser.*
 import AST.*
+import Program.*
 import Expression.given
 import Statement.given
 
 class ParserSuite extends munit.FunSuite:
-  import ParserSuite.*
-
   test("Parse simple chain of assignments"):
     val input = """let x = 5;
     |let y = 10;
     |let foobar = 838383;
     """.stripMargin
-    val expected = Right(List(
+    val expected = Right(Program(List(
       Statement.Let("x", Expression.Integer(5)),
       Statement.Let("y", Expression.Integer(10)),
       Statement.Let("foobar", Expression.Integer(838383))
-    ))
+    )))
 
     val tokens = Lexer.tokenize(input)
     val ast    = parse(tokens)
@@ -38,11 +38,11 @@ class ParserSuite extends munit.FunSuite:
     val input = """return 5;
     |return 10;
     |return 993322;""".stripMargin
-    val expected = Right(List(
+    val expected = Right(Program(List(
       Statement.Return(Expression.Integer(5)),
       Statement.Return(Expression.Integer(10)),
       Statement.Return(Expression.Integer(993322))
-    ))
+    )))
 
     val tokens = Lexer.tokenize(input)
     val ast    = parse(tokens)
@@ -50,8 +50,9 @@ class ParserSuite extends munit.FunSuite:
     assertEquals(ast, expected)
 
   test("Parse identifier expression statement"):
-    val input    = "foobar;"
-    val expected = Right(List(Statement.Expr(Expression.Identifier("foobar"))))
+    val input = "foobar;"
+    val expected =
+      Right(Program(List(Statement.Expr(Expression.Identifier("foobar")))))
 
     val tokens = Lexer.tokenize(input)
     val ast    = parse(tokens)
@@ -60,7 +61,7 @@ class ParserSuite extends munit.FunSuite:
 
   test("Parse integer expression statement"):
     val input    = "42;"
-    val expected = Right(List(Statement.Expr(Expression.Integer(42))))
+    val expected = Right(Program(List(Statement.Expr(Expression.Integer(42)))))
 
     val tokens = Lexer.tokenize(input)
     val ast    = parse(tokens)
@@ -73,10 +74,11 @@ class ParserSuite extends munit.FunSuite:
       ("-42;", Token.Minus, Expression.Integer(42))
     )
     testCases.foreach: (input, expectedOp, expectedExpr) =>
-      val expected = Right(List(Statement.Expr(Expression.PrefixOperator(
-        expectedOp,
-        expectedExpr
-      ))))
+      val expected =
+        Right(Program(List(Statement.Expr(Expression.PrefixOperator(
+          expectedOp,
+          expectedExpr
+        )))))
       val tokens = Lexer.tokenize(input)
       val ast    = parse(tokens)
 
@@ -84,10 +86,10 @@ class ParserSuite extends munit.FunSuite:
 
   test("Parse nested prefix expression"):
     val input = "!!42;"
-    val expected = Right(List(Statement.Expr(Expression.PrefixOperator(
+    val expected = Right(Program(List(Statement.Expr(Expression.PrefixOperator(
       Token.Bang,
       Expression.PrefixOperator(Token.Bang, Expression.Integer(42))
-    ))))
+    )))))
     val tokens = Lexer.tokenize(input)
     val ast    = parse(tokens)
 
@@ -116,11 +118,11 @@ class ParserSuite extends munit.FunSuite:
     )
 
     testCases.foreach: (input, expectedLeft, expectedOp, expectedRight) =>
-      val expected = Right(List(Statement.Expr(Expression.InfixOperator(
+      val expected = Right(Program(List(Statement.Expr(Expression.InfixOperator(
         expectedLeft,
         expectedOp,
         expectedRight
-      ))))
+      )))))
       val tokens = Lexer.tokenize(input)
       val ast    = parse(tokens)
 
@@ -184,13 +186,4 @@ class ParserSuite extends munit.FunSuite:
 
       val ast = Parser.parse(tokens)
 
-      assertEquals(ast.map(show), Right(expected))
-
-object ParserSuite:
-  def show(node: Node): String =
-    if node.isInstanceOf[Expression] then
-      Expression.showExpression.show(node.asInstanceOf[Expression])
-    else
-      Statement.showStatement.show(node.asInstanceOf[Statement])
-
-  def show(nodes: List[Node]): String = nodes.map(show).mkString("\n")
+      assertEquals(ast.map(_.show), Right(expected))

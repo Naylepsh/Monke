@@ -6,7 +6,6 @@ object AST:
         extends Expression
     case InfixOperator(left: Expression, token: Token, right: Expression)
         extends Expression
-
   object Expression:
     given showExpression(using showToken: Show[Token]): Show[Expression] with
       def show(expr: Expression): String =
@@ -22,7 +21,6 @@ object AST:
     case Let(identifier: String, expression: Expression) extends Statement
     case Return(expression: Expression)                  extends Statement
     case Expr(expression: Expression)                    extends Statement
-
   object Statement:
     given showStatement(
         using showExpression: Show[Expression],
@@ -37,3 +35,18 @@ object AST:
           case Expr(expression) => showExpression.show(expression)
 
   type Node = Expression | Statement
+
+  case class Program(nodes: List[Node])
+  object Program:
+    given showProgram(
+        using showStatement: Show[Statement],
+        showExpression: Show[Expression]
+    ): Show[Program] with
+      def show(program: Program): String =
+        program
+          .nodes
+          .map: node =>
+            node match
+              case statement: Statement   => showStatement.show(statement)
+              case expression: Expression => showExpression.show(expression)
+          .mkString("\n")
