@@ -1,5 +1,6 @@
 import Token.given
 import Parser.*
+import AST.*
 import Expression.given
 import Statement.given
 

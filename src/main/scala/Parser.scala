@@ -1,50 +1,5 @@
 object Parser:
-  enum ParsingError:
-    case InvalidInteger(value: String)             extends ParsingError
-    case InvalidLetExpression(tokens: List[Token]) extends ParsingError
-    case InvalidExpression(tokens: List[Token])    extends ParsingError
-    case NoPrefixExpression(token: Token)          extends ParsingError
-    case NoInfixExpression(token: Token)           extends ParsingError
-    case UnmatchedCase(tokens: List[Token])        extends ParsingError
-
-  enum Expression:
-    case Identifier(value: String) extends Expression
-    case Integer(value: Int)       extends Expression
-    case PrefixOperator(token: Token, expression: Expression)
-        extends Expression
-    case InfixOperator(left: Expression, token: Token, right: Expression)
-        extends Expression
-
-  object Expression:
-    given showExpression(using showToken: Show[Token]): Show[Expression] with
-      def show(expr: Expression): String =
-        expr match
-          case Identifier(value) => value
-          case Integer(value)    => value.toString
-          case PrefixOperator(token, expression) =>
-            s"(${showToken.show(token)}${show(expression)})"
-          case InfixOperator(left, token, right) =>
-            s"(${show(left)} ${showToken.show(token)} ${show(right)})"
-
-  enum Statement:
-    case Let(identifier: String, expression: Expression) extends Statement
-    case Return(expression: Expression)                  extends Statement
-    case Expr(expression: Expression)                    extends Statement
-
-  object Statement:
-    given showStatement(
-        using showExpression: Show[Expression],
-        showToken: Show[Token]
-    ): Show[Statement] with
-      def show(statement: Statement): String =
-        statement match
-          case Let(identifier, expression) =>
-            s"let $identifier = ${showExpression.show(expression)}"
-          case Return(expression) =>
-            s"return ${showExpression.show(expression)}"
-          case Expr(expression) => showExpression.show(expression)
-
-  type Node = Expression | Statement
+  import AST.*
 
   enum Precedence:
     case Lowest, Equals, LessGreater, Sum, Product, Prefix, Call
@@ -60,6 +15,14 @@ object Parser:
         case (Token.Asterisk | Token.Slash)         => Product
         case _                                      => Lowest
 
+  enum ParsingError:
+    case InvalidInteger(value: String)             extends ParsingError
+    case InvalidLetExpression(tokens: List[Token]) extends ParsingError
+    case InvalidExpression(tokens: List[Token])    extends ParsingError
+    case NoPrefixExpression(token: Token)          extends ParsingError
+    case NoInfixExpression(token: Token)           extends ParsingError
+    case UnmatchedCase(tokens: List[Token])        extends ParsingError
+
   def parse(tokens: List[Token]): Either[List[ParsingError], List[Node]] =
     parse(tokens, List.empty, List.empty)
 
@@ -71,25 +34,27 @@ object Parser:
   ): Either[List[ParsingError], List[Node]] =
     tokens match
       case Nil | (Token.EOF :: Nil) =>
-        if errors.isEmpty then Right(ast.reverse) else Left(errors.reverse)
+        if errors.isEmpty
+        then Right(ast.reverse)
+        else Left(errors.reverse)
       // Keep it for now, until the rest of the parsing is not fully fleshed out
       case Token.Semicolon :: rest => parse(rest, ast, errors)
       case all @ Token.Let :: rest =>
         parseLetStatement(rest) match
-          case Left(reason) =>
-            parse(eatUntilExprEnd(all), ast, reason :: errors)
+          case Left(error) =>
+            parse(eatUntilExprEnd(all), ast, error :: errors)
           case Right((statement, leftoverTokens)) =>
             parse(leftoverTokens, statement :: ast, errors)
       case all @ Token.Return :: rest =>
         parseExpression(rest, Precedence.Lowest) match
-          case Left(reason) =>
-            parse(eatUntilExprEnd(all), ast, reason :: errors)
+          case Left(error) =>
+            parse(eatUntilExprEnd(all), ast, error :: errors)
           case Right((expr, leftoverTokens)) =>
             parse(leftoverTokens, Statement.Return(expr) :: ast, errors)
       case other =>
         parseExpression(other, Precedence.Lowest) match
-          case Left(reason) =>
-            parse(eatUntilExprEnd(other), ast, reason :: errors)
+          case Left(error) =>
+            parse(eatUntilExprEnd(other), ast, error :: errors)
           case Right((expression, leftoverTokens)) =>
             parse(leftoverTokens, Statement.Expr(expression) :: ast, errors)
 
@@ -118,7 +83,7 @@ object Parser:
           Right(expr -> all)
         case other =>
           parseInfixExpression(expr, other) match
-            case failure @ Left(_) => failure
+            case error @ Left(_) => error
             case Right((expression, leftoverTokens)) =>
               doParseInfixExpr(expression, leftoverTokens)
 
@@ -138,7 +103,7 @@ object Parser:
           case Some(int) => Right(Expression.Integer(int) -> rest)
       case (token @ (Token.Bang | Token.Minus)) :: rest =>
         parseExpression(rest, Precedence.Prefix) match
-          case reason @ Left(_) => reason
+          case error @ Left(_) => error
           case Right((expression, leftoverTokens)) =>
             Right(Expression.PrefixOperator(token, expression), leftoverTokens)
       case token :: rest => Left(ParsingError.NoPrefixExpression(token))
@@ -149,7 +114,14 @@ object Parser:
   ): Either[ParsingError, (Expression, List[Token])] =
     tokens match
       case Nil => Left(ParsingError.InvalidExpression(Nil))
-      case (token @ (Token.Plus | Token.Minus | Token.Asterisk | Token.Slash | Token.Equal | Token.NotEqual | Token.LesserThan | Token.GreaterThan)) :: rest =>
+      case (token @ (Token.Plus
+          | Token.Minus
+          | Token.Asterisk
+          | Token.Slash
+          | Token.Equal
+          | Token.NotEqual
+          | Token.LesserThan
+          | Token.GreaterThan)) :: rest =>
         parseExpression(rest, Precedence.of(token)).map:
           (right, leftoverTokens) =>
             Expression.InfixOperator(left, token, right) -> leftoverTokens
