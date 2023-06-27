@@ -13,9 +13,9 @@ class ParserSuite extends munit.FunSuite:
     |let foobar = 838383;
     """.stripMargin
     val expected = Right(Program(List(
-      Statement.Let("x", Expression.Integer(5)),
-      Statement.Let("y", Expression.Integer(10)),
-      Statement.Let("foobar", Expression.Integer(838383))
+      Statement.Let("x", Expression.IntegerLiteral(5)),
+      Statement.Let("y", Expression.IntegerLiteral(10)),
+      Statement.Let("foobar", Expression.IntegerLiteral(838383))
     )))
 
     val tokens = Lexer.tokenize(input)
@@ -39,9 +39,9 @@ class ParserSuite extends munit.FunSuite:
     |return 10;
     |return 993322;""".stripMargin
     val expected = Right(Program(List(
-      Statement.Return(Expression.Integer(5)),
-      Statement.Return(Expression.Integer(10)),
-      Statement.Return(Expression.Integer(993322))
+      Statement.Return(Expression.IntegerLiteral(5)),
+      Statement.Return(Expression.IntegerLiteral(10)),
+      Statement.Return(Expression.IntegerLiteral(993322))
     )))
 
     val tokens = Lexer.tokenize(input)
@@ -60,18 +60,30 @@ class ParserSuite extends munit.FunSuite:
     assertEquals(ast, expected)
 
   test("Parse integer expression statement"):
-    val input    = "42;"
-    val expected = Right(Program(List(Statement.Expr(Expression.Integer(42)))))
+    val input = "42;"
+    val expected =
+      Right(Program(List(Statement.Expr(Expression.IntegerLiteral(42)))))
 
     val tokens = Lexer.tokenize(input)
     val ast    = parse(tokens)
 
     assertEquals(ast, expected)
 
+  test("Parse boolean expression statement"):
+    val testCases = List(
+      ("true;", Statement.Expr(Expression.BooleanLiteral(true))),
+      ("false;", Statement.Expr(Expression.BooleanLiteral(false)))
+    )
+    testCases.foreach: (input, expected) =>
+      val tokens = Lexer.tokenize(input)
+      val ast    = parse(tokens)
+
+      assertEquals(ast, Right(Program(List(expected))))
+
   test("Parse prefix expression"):
     val testCases = List(
-      ("!42;", Token.Bang, Expression.Integer(42)),
-      ("-42;", Token.Minus, Expression.Integer(42))
+      ("!42;", Token.Bang, Expression.IntegerLiteral(42)),
+      ("-42;", Token.Minus, Expression.IntegerLiteral(42))
     )
     testCases.foreach: (input, expectedOp, expectedExpr) =>
       val expected =
@@ -88,7 +100,7 @@ class ParserSuite extends munit.FunSuite:
     val input = "!!42;"
     val expected = Right(Program(List(Statement.Expr(Expression.PrefixOperator(
       Token.Bang,
-      Expression.PrefixOperator(Token.Bang, Expression.Integer(42))
+      Expression.PrefixOperator(Token.Bang, Expression.IntegerLiteral(42))
     )))))
     val tokens = Lexer.tokenize(input)
     val ast    = parse(tokens)
@@ -97,24 +109,54 @@ class ParserSuite extends munit.FunSuite:
 
   test("Parse infix expression"):
     val testCases = List(
-      ("5 + 5;", Expression.Integer(5), Token.Plus, Expression.Integer(5)),
-      ("5 - 5;", Expression.Integer(5), Token.Minus, Expression.Integer(5)),
-      ("5 * 5;", Expression.Integer(5), Token.Asterisk, Expression.Integer(5)),
-      ("5 / 5;", Expression.Integer(5), Token.Slash, Expression.Integer(5)),
+      (
+        "5 + 5;",
+        Expression.IntegerLiteral(5),
+        Token.Plus,
+        Expression.IntegerLiteral(5)
+      ),
+      (
+        "5 - 5;",
+        Expression.IntegerLiteral(5),
+        Token.Minus,
+        Expression.IntegerLiteral(5)
+      ),
+      (
+        "5 * 5;",
+        Expression.IntegerLiteral(5),
+        Token.Asterisk,
+        Expression.IntegerLiteral(5)
+      ),
+      (
+        "5 / 5;",
+        Expression.IntegerLiteral(5),
+        Token.Slash,
+        Expression.IntegerLiteral(5)
+      ),
       (
         "5 > 5;",
-        Expression.Integer(5),
+        Expression.IntegerLiteral(5),
         Token.GreaterThan,
-        Expression.Integer(5)
+        Expression.IntegerLiteral(5)
       ),
       (
         "5 < 5;",
-        Expression.Integer(5),
+        Expression.IntegerLiteral(5),
         Token.LesserThan,
-        Expression.Integer(5)
+        Expression.IntegerLiteral(5)
       ),
-      ("5 == 5;", Expression.Integer(5), Token.Equal, Expression.Integer(5)),
-      ("5 != 5;", Expression.Integer(5), Token.NotEqual, Expression.Integer(5))
+      (
+        "5 == 5;",
+        Expression.IntegerLiteral(5),
+        Token.Equal,
+        Expression.IntegerLiteral(5)
+      ),
+      (
+        "5 != 5;",
+        Expression.IntegerLiteral(5),
+        Token.NotEqual,
+        Expression.IntegerLiteral(5)
+      )
     )
 
     testCases.foreach: (input, expectedLeft, expectedOp, expectedRight) =>
@@ -179,6 +221,14 @@ class ParserSuite extends munit.FunSuite:
       (
         "3 + 4 * 5 == 3 * 1 + 4 * 5",
         "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+      ),
+      (
+        "3 > 5 == false",
+        "((3 > 5) == false)",
+      ),
+      (
+        "3 < 5 == true",
+        "((3 < 5) == true)",
       )
     )
     testCases.foreach: (input, expected) =>

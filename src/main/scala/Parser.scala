@@ -100,7 +100,11 @@ object Parser:
       case Token.Integer(value) :: rest =>
         value.toIntOption match
           case None      => Left(ParsingError.InvalidInteger(value))
-          case Some(int) => Right(Expression.Integer(int) -> rest)
+          case Some(int) => Right(Expression.IntegerLiteral(int) -> rest)
+      case Token.True :: rest =>
+        Right(Expression.BooleanLiteral(true) -> rest)
+      case Token.False :: rest =>
+        Right(Expression.BooleanLiteral(false) -> rest)
       case (token @ (Token.Bang | Token.Minus)) :: rest =>
         parseExpression(rest, Precedence.Prefix) match
           case error @ Left(_) => error

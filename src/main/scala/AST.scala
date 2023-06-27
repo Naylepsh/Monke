@@ -1,7 +1,8 @@
 object AST:
   enum Expression:
-    case Identifier(value: String) extends Expression
-    case Integer(value: Int)       extends Expression
+    case Identifier(value: String)      extends Expression
+    case IntegerLiteral(value: Int)     extends Expression
+    case BooleanLiteral(value: Boolean) extends Expression
     case PrefixOperator(token: Token, expression: Expression)
         extends Expression
     case InfixOperator(left: Expression, token: Token, right: Expression)
@@ -10,8 +11,9 @@ object AST:
     given showExpression(using showToken: Show[Token]): Show[Expression] with
       def show(expr: Expression): String =
         expr match
-          case Identifier(value) => value
-          case Integer(value)    => value.toString
+          case Identifier(value)     => value
+          case IntegerLiteral(value) => value.toString
+          case BooleanLiteral(value) => value.toString
           case PrefixOperator(token, expression) =>
             s"(${showToken.show(token)}${show(expression)})"
           case InfixOperator(left, token, right) =>
