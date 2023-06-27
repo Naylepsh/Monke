@@ -277,3 +277,4 @@ class ParserSuite extends munit.FunSuite:
       val ast = Parser.parse(tokens)
 
       assertEquals(ast.map(_.show), Right(expected))
+

@@ -16,12 +16,14 @@ object Parser:
         case _                                      => Lowest
 
   enum ParsingError:
-    case InvalidInteger(value: String)             extends ParsingError
-    case InvalidLetExpression(tokens: List[Token]) extends ParsingError
-    case InvalidExpression(tokens: List[Token])    extends ParsingError
-    case NoPrefixExpression(token: Token)          extends ParsingError
-    case NoInfixExpression(token: Token)           extends ParsingError
-    case UnmatchedCase(tokens: List[Token])        extends ParsingError
+    case InvalidInteger(value: String)              extends ParsingError
+    case InvalidLetExpression(tokens: List[Token])  extends ParsingError
+    case InvalidExpression(tokens: List[Token])     extends ParsingError
+    case NoPrefixExpression(token: Token)           extends ParsingError
+    case NoInfixExpression(token: Token)            extends ParsingError
+    case UnmatchedCase(tokens: List[Token])         extends ParsingError
+    case MissingClosingBracket(tokens: List[Token]) extends ParsingError
+    case InvalidIfExpression(tokens: List[Token])   extends ParsingError
 
   def parse(tokens: List[Token]): Either[List[ParsingError], Program] =
     parse(tokens, List.empty, List.empty).map(Program(_))
@@ -71,15 +73,6 @@ object Parser:
             Statement.Let(identifier, expression) -> leftoverTokens
       case _ => Left(ParsingError.InvalidLetExpression(tokens))
 
-  private def parseBlockStatement(tokens: List[Token]) =
-    def parseBlock(
-        tokens: List[Token],
-        ast: List[Node],
-        errors: List[ParsingError]
-    ): Either[List[ParsingError], List[Node]] =
-      parse(tokens, List.empty, List.empty) match
-        case _ => ???
-
   private def parseExpression(
       tokens: List[Token],
       precedence: Precedence
@@ -123,12 +116,57 @@ object Parser:
           case error @ Left(_) => error
           case Right((expression, leftoverTokens)) =>
             Right(Expression.PrefixOperator(token, expression), leftoverTokens)
-      case all @ Token.LeftParen :: rest =>
-        parseExpression(rest, Precedence.Lowest).flatMap:
-          case (expression, Token.RightParen :: rest) =>
-            Right(expression -> rest)
-          case _ => Left(ParsingError.InvalidExpression(all))
+      case all @ Token.If :: rest =>
+        parseIfExpression(rest).left.map(_.head) // TODO: fix unsafe
       case token :: rest => Left(ParsingError.NoPrefixExpression(token))
+
+  private def parseIfExpression(tokens: List[Token])
+      : Either[List[ParsingError], (Expression.If, List[Token])] =
+    tokens match
+      case Token.LeftParen :: rest =>
+        parseExpression(rest, Precedence.Lowest) match
+          case Left(error) => Left(List(error))
+          case Right(
+                condition,
+                Token.RightParen :: Token.LeftBrace :: leftoverTokens
+              ) =>
+            parseBlockStatement(leftoverTokens) match
+              case Left(errors) => Left(errors)
+              // TODO: Handle else { ... }
+              case Right(consequence, leftoverTokens) =>
+                Right(
+                  Expression.If(condition, consequence, None)
+                    -> leftoverTokens
+                )
+          case Right(_, other) =>
+            Left(List(ParsingError.InvalidIfExpression(eatUntilExprEnd(other))))
+      case other => Left(List(ParsingError.InvalidIfExpression(tokens)))
+
+  private def parseBlockStatement(tokens: List[Token]) =
+    @annotation.tailrec
+    def parseBlock(
+        currentTokens: List[Token],
+        ast: List[Node],
+        errors: List[ParsingError]
+    ): Either[List[ParsingError], (List[Node], List[Token])] =
+      currentTokens match
+        case Nil =>
+          Left((ParsingError.MissingClosingBracket(tokens) :: errors).reverse)
+        case Token.LeftBrace :: rest =>
+          if errors.isEmpty
+          then Right(ast.reverse -> rest)
+          else Left(errors.reverse)
+        case currentTokens =>
+          nextNode(currentTokens) match
+            case Right(None, leftoverTokens) =>
+              parseBlock(leftoverTokens, ast, errors)
+            case Right(Some(node), leftoverTokens) =>
+              parseBlock(leftoverTokens, node :: ast, errors)
+            case Left(error) =>
+              parseBlock(eatUntilExprEnd(currentTokens), ast, error :: errors)
+
+    parseBlock(tokens, List.empty, List.empty).map: (nodes, leftoverTokens) =>
+      Statement.Block(nodes) -> leftoverTokens
 
   private def parseInfixExpression(
       left: Expression,
