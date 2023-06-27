@@ -33,30 +33,34 @@ object Parser:
       errors: List[ParsingError]
   ): Either[List[ParsingError], List[Node]] =
     tokens match
-      case Nil | (Token.EOF :: Nil) =>
+      case Nil =>
         if errors.isEmpty
         then Right(ast.reverse)
         else Left(errors.reverse)
+      case tokens =>
+        nextNode(tokens) match
+          case Right(None, leftoverTokens) =>
+            parse(leftoverTokens, ast, errors)
+          case Right(Some(node), leftoverTokens) =>
+            parse(leftoverTokens, node :: ast, errors)
+          case Left(error) =>
+            parse(eatUntilExprEnd(tokens), ast, error :: errors)
+
+  private def nextNode(tokens: List[Token])
+      : Either[ParsingError, (Option[Node], List[Token])] =
+    tokens match
+      case Nil | (Token.EOF :: Nil) => Right(None -> List.empty)
       // Keep it for now, until the rest of the parsing is not fully fleshed out
-      case Token.Semicolon :: rest => parse(rest, ast, errors)
+      case Token.Semicolon :: rest => Right(None -> rest)
       case all @ Token.Let :: rest =>
-        parseLetStatement(rest) match
-          case Left(error) =>
-            parse(eatUntilExprEnd(all), ast, error :: errors)
-          case Right((statement, leftoverTokens)) =>
-            parse(leftoverTokens, statement :: ast, errors)
+        parseLetStatement(rest).map: (expr, leftoverTokens) =>
+          Some(expr) -> leftoverTokens
       case all @ Token.Return :: rest =>
-        parseExpression(rest, Precedence.Lowest) match
-          case Left(error) =>
-            parse(eatUntilExprEnd(all), ast, error :: errors)
-          case Right((expr, leftoverTokens)) =>
-            parse(leftoverTokens, Statement.Return(expr) :: ast, errors)
+        parseExpression(rest, Precedence.Lowest).map: (expr, leftoverTokens) =>
+          Some(Statement.Return(expr)) -> leftoverTokens
       case other =>
-        parseExpression(other, Precedence.Lowest) match
-          case Left(error) =>
-            parse(eatUntilExprEnd(other), ast, error :: errors)
-          case Right((expression, leftoverTokens)) =>
-            parse(leftoverTokens, Statement.Expr(expression) :: ast, errors)
+        parseExpression(other, Precedence.Lowest).map: (expr, leftoverTokens) =>
+          Some(Statement.Expr(expr)) -> leftoverTokens
 
   private def parseLetStatement(tokens: List[Token]) =
     tokens match
@@ -66,6 +70,15 @@ object Parser:
           (expression, leftoverTokens) =>
             Statement.Let(identifier, expression) -> leftoverTokens
       case _ => Left(ParsingError.InvalidLetExpression(tokens))
+
+  private def parseBlockStatement(tokens: List[Token]) =
+    def parseBlock(
+        tokens: List[Token],
+        ast: List[Node],
+        errors: List[ParsingError]
+    ): Either[List[ParsingError], List[Node]] =
+      parse(tokens, List.empty, List.empty) match
+        case _ => ???
 
   private def parseExpression(
       tokens: List[Token],
