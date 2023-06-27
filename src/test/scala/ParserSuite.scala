@@ -156,6 +156,24 @@ class ParserSuite extends munit.FunSuite:
         Expression.IntegerLiteral(5),
         Token.NotEqual,
         Expression.IntegerLiteral(5)
+      ),
+      (
+        "true == true",
+        Expression.BooleanLiteral(true),
+        Token.Equal,
+        Expression.BooleanLiteral(true)
+      ),
+      (
+        "true != false",
+        Expression.BooleanLiteral(true),
+        Token.NotEqual,
+        Expression.BooleanLiteral(false)
+      ),
+      (
+        "false == false",
+        Expression.BooleanLiteral(false),
+        Token.Equal,
+        Expression.BooleanLiteral(false)
       )
     )
 
