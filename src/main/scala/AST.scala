@@ -7,8 +7,17 @@ object AST:
         extends Expression
     case InfixOperator(left: Expression, token: Token, right: Expression)
         extends Expression
+    case If(
+        condition: Expression,
+        consequence: Statement.Block,
+        alternative: Option[Statement.Block]
+    ) extends Expression
+
   object Expression:
-    given showExpression(using showToken: Show[Token]): Show[Expression] with
+    given showExpression(
+        using showToken: Show[Token],
+        // showStatement: Show[Statement]
+    ): Show[Expression] with
       def show(expr: Expression): String =
         expr match
           case Identifier(value)     => value
@@ -18,11 +27,16 @@ object AST:
             s"(${showToken.show(token)}${show(expression)})"
           case InfixOperator(left, token, right) =>
             s"(${show(left)} ${showToken.show(token)} ${show(right)})"
+          // case If(condition, consequence, None) =>
+          //   s"(${show(condition)}) ${showStatement.show(consequence)}"
+          // case If(condition, consequence, Some(alternative)) =>
+          //   s"(${show(condition)}) ${showStatement.show(consequence)} else ${showStatement.show(alternative)}"
 
   enum Statement:
     case Let(identifier: String, expression: Expression) extends Statement
     case Return(expression: Expression)                  extends Statement
     case Expr(expression: Expression)                    extends Statement
+    case Block(nodes: List[Expression | Statement])      extends Statement
   object Statement:
     given showStatement(
         using showExpression: Show[Expression],
@@ -35,6 +49,12 @@ object AST:
           case Return(expression) =>
             s"return ${showExpression.show(expression)}"
           case Expr(expression) => showExpression.show(expression)
+          case Block(nodes) =>
+            nodes
+              .map:
+                case expression: Expression => showExpression.show(expression)
+                case statement: Statement   => show(statement)
+              .mkString("{", "\n", "}")
 
   type Node = Expression | Statement
 
