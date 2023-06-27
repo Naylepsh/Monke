@@ -83,7 +83,9 @@ class ParserSuite extends munit.FunSuite:
   test("Parse prefix expression"):
     val testCases = List(
       ("!42;", Token.Bang, Expression.IntegerLiteral(42)),
-      ("-42;", Token.Minus, Expression.IntegerLiteral(42))
+      ("-42;", Token.Minus, Expression.IntegerLiteral(42)),
+      ("!true;", Token.Bang, Expression.BooleanLiteral(true)),
+      ("!false;", Token.Bang, Expression.BooleanLiteral(false))
     )
     testCases.foreach: (input, expectedOp, expectedExpr) =>
       val expected =
