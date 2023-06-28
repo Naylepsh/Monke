@@ -45,8 +45,8 @@ object Parser:
             parse(leftoverTokens, ast, errors)
           case Right(Some(node), leftoverTokens) =>
             parse(leftoverTokens, node :: ast, errors)
-          case Left(error) =>
-            parse(eatUntilExprEnd(tokens), ast, error ::: errors)
+          case Left(newErrors) =>
+            parse(eatUntilExprEnd(tokens), ast, newErrors ::: errors)
 
   private def nextNode(tokens: List[Token])
       : Either[List[ParsingError], (Option[Node], List[Token])] =
@@ -89,7 +89,7 @@ object Parser:
           Right(expr -> all)
         case other =>
           parseInfixExpression(expr, other) match
-            case Left(error) => Left(error)
+            case errors @ Left(_) => errors
             case Right((expression, leftoverTokens)) =>
               doParseInfixExpr(expression, leftoverTokens)
 
@@ -112,11 +112,9 @@ object Parser:
       case Token.False :: rest =>
         Right(Expression.BooleanLiteral(false) -> rest)
       case (token @ (Token.Bang | Token.Minus)) :: rest =>
-        parseExpression(rest, Precedence.Prefix) match
-          // TODO: turn into flatmap
-          case error @ Left(_) => error
-          case Right((expression, leftoverTokens)) =>
-            Right(Expression.PrefixOperator(token, expression), leftoverTokens)
+        parseExpression(rest, Precedence.Prefix).map:
+          (expression, leftoverTokens) =>
+            Expression.PrefixOperator(token, expression) -> leftoverTokens
       case all @ Token.LeftParen :: rest =>
         parseExpression(rest, Precedence.Lowest)
           .flatMap:
@@ -127,13 +125,11 @@ object Parser:
         parseIfExpression(rest)
       case token :: rest => Left(List(ParsingError.NoPrefixExpression(token)))
 
-  private def parseIfExpression(tokens: List[Token])
-      : Either[List[ParsingError], (Expression.If, List[Token])] =
+  private def parseIfExpression(tokens: List[Token]) =
     tokens match
       case Token.LeftParen :: rest =>
-        parseExpression(rest, Precedence.Lowest) match
-          case Left(errors) => Left(errors)
-          case Right(
+        parseExpression(rest, Precedence.Lowest).flatMap:
+          case (
                 condition,
                 Token.RightParen :: Token.LeftBrace :: leftoverTokens
               ) =>
@@ -144,26 +140,17 @@ object Parser:
                   consequence,
                   alternative
                 ) -> leftoverTokens
-          case Right(_, other) =>
+          case (_, other) =>
             Left(List(ParsingError.InvalidIfExpression(eatUntilExprEnd(other))))
       case other => Left(List(ParsingError.InvalidIfExpression(tokens)))
 
   private def parseIfBodies(tokens: List[Token]) =
-    parseBlockStatement(tokens) match
-      case Left(errors) => Left(errors)
-      case Right(
-            consequence,
-            Token.Else :: Token.LeftBrace :: leftoverTokens
-          ) =>
-        parseBlockStatement(leftoverTokens) match
-          case Left(errors) => Left(errors)
-          case Right(alternative, leftoverTokens) =>
-            Right(
-              consequence,
-              Some(alternative),
-              leftoverTokens
-            )
-      case Right(consequence, leftoverTokens) =>
+    parseBlockStatement(tokens).flatMap:
+      case (consequence, Token.Else :: Token.LeftBrace :: leftoverTokens) =>
+        parseBlockStatement(leftoverTokens).map:
+          (alternative, leftoverTokens) =>
+            (consequence, Some(alternative), leftoverTokens)
+      case (consequence, leftoverTokens) =>
         Right(consequence, None, leftoverTokens)
 
   private def parseBlockStatement(tokens: List[Token]) =
