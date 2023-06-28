@@ -1,10 +1,9 @@
-import Token.given
-import Show.*
+import Token.*
 import Parser.*
 import AST.*
+import Node.given
 import Program.*
-import Expression.given
-import Statement.given
+import Show.*
 
 class ParserSuite extends munit.FunSuite:
   test("Parse simple chain of assignments"):

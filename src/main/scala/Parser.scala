@@ -116,6 +116,11 @@ object Parser:
           case error @ Left(_) => error
           case Right((expression, leftoverTokens)) =>
             Right(Expression.PrefixOperator(token, expression), leftoverTokens)
+      case all @ Token.LeftParen :: rest =>
+        parseExpression(rest, Precedence.Lowest).flatMap:
+          case (expression, Token.RightParen :: rest) =>
+            Right(expression -> rest)
+          case _ => Left(ParsingError.InvalidExpression(all))
       case all @ Token.If :: rest =>
         parseIfExpression(rest).left.map(_.head) // TODO: fix unsafe
       case token :: rest => Left(ParsingError.NoPrefixExpression(token))
