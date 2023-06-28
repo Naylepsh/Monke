@@ -31,6 +31,10 @@ object AST:
             s"(${showToken.show(token)}${show(expression)})"
           case Expression.InfixOperator(left, token, right) =>
             s"(${show(left)} ${showToken.show(token)} ${show(right)})"
+          case Expression.If(condition, consequence, None) =>
+            s"(${show(condition)}) ${show(consequence)}"
+          case Expression.If(condition, consequence, Some(alternative)) =>
+            s"(${show(condition)}) ${show(consequence)} else ${show(alternative)}"
           case Statement.Let(identifier, expression) =>
             s"let $identifier = ${show(expression)}"
           case Statement.Return(expression) =>
@@ -38,10 +42,6 @@ object AST:
           case Statement.Expr(expression) => show(expression)
           case Statement.Block(nodes) =>
             nodes.map(show).mkString("{", "\n", "}")
-          // case If(condition, consequence, None) =>
-          //   s"(${show(condition)}) ${showStatement.show(consequence)}"
-          // case If(condition, consequence, Some(alternative)) =>
-          //   s"(${show(condition)}) ${showStatement.show(consequence)} else ${showStatement.show(alternative)}"
 
   case class Program(nodes: List[Node])
   object Program:
