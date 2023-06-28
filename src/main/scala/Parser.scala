@@ -135,26 +135,34 @@ object Parser:
                 condition,
                 Token.RightParen :: Token.LeftBrace :: leftoverTokens
               ) =>
-            parseBlockStatement(leftoverTokens) match
-              case Left(errors) => Left(errors)
-              case Right(
-                    consequence,
-                    Token.Else :: Token.LeftBrace :: leftoverTokens
-                  ) =>
-                parseBlockStatement(leftoverTokens) match
-                  case Left(errors) => Left(errors)
-                  case Right(alternative, leftoverTokens) => Right(
-                      Expression.If(condition, consequence, Some(alternative))
-                        -> leftoverTokens
-                    )
-              case Right(consequence, leftoverTokens) =>
-                Right(
-                  Expression.If(condition, consequence, None)
-                    -> leftoverTokens
-                )
+            parseIfBodies(leftoverTokens).map:
+              case (consequence, alternative, leftoverTokens) =>
+                Expression.If(
+                  condition,
+                  consequence,
+                  alternative
+                ) -> leftoverTokens
           case Right(_, other) =>
             Left(List(ParsingError.InvalidIfExpression(eatUntilExprEnd(other))))
       case other => Left(List(ParsingError.InvalidIfExpression(tokens)))
+
+  private def parseIfBodies(tokens: List[Token]) =
+    parseBlockStatement(tokens) match
+      case Left(errors) => Left(errors)
+      case Right(
+            consequence,
+            Token.Else :: Token.LeftBrace :: leftoverTokens
+          ) =>
+        parseBlockStatement(leftoverTokens) match
+          case Left(errors) => Left(errors)
+          case Right(alternative, leftoverTokens) =>
+            Right(
+              consequence,
+              Some(alternative),
+              leftoverTokens
+            )
+      case Right(consequence, leftoverTokens) =>
+        Right(consequence, None, leftoverTokens)
 
   private def parseBlockStatement(tokens: List[Token]) =
     @annotation.tailrec
