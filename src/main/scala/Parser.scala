@@ -137,7 +137,16 @@ object Parser:
               ) =>
             parseBlockStatement(leftoverTokens) match
               case Left(errors) => Left(errors)
-              // TODO: Handle else { ... }
+              case Right(
+                    consequence,
+                    Token.Else :: Token.LeftBrace :: leftoverTokens
+                  ) =>
+                parseBlockStatement(leftoverTokens) match
+                  case Left(errors) => Left(errors)
+                  case Right(alternative, leftoverTokens) => Right(
+                      Expression.If(condition, consequence, Some(alternative))
+                        -> leftoverTokens
+                    )
               case Right(consequence, leftoverTokens) =>
                 Right(
                   Expression.If(condition, consequence, None)
