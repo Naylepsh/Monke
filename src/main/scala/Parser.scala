@@ -157,7 +157,7 @@ object Parser:
       currentTokens match
         case Nil =>
           Left((ParsingError.MissingClosingBracket(tokens) :: errors).reverse)
-        case Token.LeftBrace :: rest =>
+        case Token.RightBrace :: rest =>
           if errors.isEmpty
           then Right(ast.reverse -> rest)
           else Left(errors.reverse)
