@@ -303,3 +303,32 @@ class ParserSuite extends munit.FunSuite:
     val ast    = parse(tokens)
 
     assertEquals(ast, expected)
+
+  test("Parse if expression with else clause"):
+    val input = "if (x == y) { return true; } else { return false; }"
+    val expected = Right(
+      Program(
+        List(
+          Statement.Expr(
+            Expression.If(
+              Expression.InfixOperator(
+                Expression.Identifier("x"),
+                Token.Equal,
+                Expression.Identifier("y")
+              ),
+              Statement.Block(
+                List(Statement.Return(Expression.BooleanLiteral(true)))
+              ),
+              Some(Statement.Block(
+                List(Statement.Return(Expression.BooleanLiteral(false)))
+              ))
+            )
+          )
+        )
+      )
+    )
+
+    val tokens = Lexer.tokenize(input)
+    val ast    = parse(tokens)
+
+    assertEquals(ast, expected)
