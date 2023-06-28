@@ -46,10 +46,10 @@ object Parser:
           case Right(Some(node), leftoverTokens) =>
             parse(leftoverTokens, node :: ast, errors)
           case Left(error) =>
-            parse(eatUntilExprEnd(tokens), ast, error :: errors)
+            parse(eatUntilExprEnd(tokens), ast, error ::: errors)
 
   private def nextNode(tokens: List[Token])
-      : Either[ParsingError, (Option[Node], List[Token])] =
+      : Either[List[ParsingError], (Option[Node], List[Token])] =
     tokens match
       case Nil | (Token.EOF :: Nil) => Right(None -> List.empty)
       // Keep it for now, until the rest of the parsing is not fully fleshed out
@@ -71,17 +71,17 @@ object Parser:
           :: rest => parseExpression(rest, Precedence.Lowest).map:
           (expression, leftoverTokens) =>
             Statement.Let(identifier, expression) -> leftoverTokens
-      case _ => Left(ParsingError.InvalidLetExpression(tokens))
+      case _ => Left(List(ParsingError.InvalidLetExpression(tokens)))
 
   private def parseExpression(
       tokens: List[Token],
       precedence: Precedence
-  ): Either[ParsingError, (Expression, List[Token])] =
+  ): Either[List[ParsingError], (Expression, List[Token])] =
     @annotation.tailrec
     def doParseInfixExpr(
         expr: Expression,
         tokens: List[Token]
-    ): Either[ParsingError, (Expression, List[Token])] =
+    ): Either[List[ParsingError], (Expression, List[Token])] =
       tokens match
         case Nil | (Token.EOF :: Nil) => Right(expr -> Nil)
         case Token.Semicolon :: rest  => Right(expr -> tokens)
@@ -89,7 +89,7 @@ object Parser:
           Right(expr -> all)
         case other =>
           parseInfixExpression(expr, other) match
-            case error @ Left(_) => error
+            case Left(error) => Left(error)
             case Right((expression, leftoverTokens)) =>
               doParseInfixExpr(expression, leftoverTokens)
 
@@ -98,14 +98,14 @@ object Parser:
   private def parsePrefixExpression(
       tokens: List[Token],
       precedence: Precedence
-  ): Either[ParsingError, (Expression, List[Token])] =
+  ): Either[List[ParsingError], (Expression, List[Token])] =
     tokens match
-      case Nil => Left(ParsingError.InvalidExpression(Nil))
+      case Nil => Left(List(ParsingError.InvalidExpression(Nil)))
       case Token.Identifier(value) :: rest =>
         Right(Expression.Identifier(value) -> rest)
       case Token.Integer(value) :: rest =>
         value.toIntOption match
-          case None      => Left(ParsingError.InvalidInteger(value))
+          case None      => Left(List(ParsingError.InvalidInteger(value)))
           case Some(int) => Right(Expression.IntegerLiteral(int) -> rest)
       case Token.True :: rest =>
         Right(Expression.BooleanLiteral(true) -> rest)
@@ -113,24 +113,26 @@ object Parser:
         Right(Expression.BooleanLiteral(false) -> rest)
       case (token @ (Token.Bang | Token.Minus)) :: rest =>
         parseExpression(rest, Precedence.Prefix) match
+          // TODO: turn into flatmap
           case error @ Left(_) => error
           case Right((expression, leftoverTokens)) =>
             Right(Expression.PrefixOperator(token, expression), leftoverTokens)
       case all @ Token.LeftParen :: rest =>
-        parseExpression(rest, Precedence.Lowest).flatMap:
-          case (expression, Token.RightParen :: rest) =>
-            Right(expression -> rest)
-          case _ => Left(ParsingError.InvalidExpression(all))
+        parseExpression(rest, Precedence.Lowest)
+          .flatMap:
+            case (expression, Token.RightParen :: rest) =>
+              Right(expression -> rest)
+            case _ => Left(List(ParsingError.InvalidExpression(all)))
       case all @ Token.If :: rest =>
-        parseIfExpression(rest).left.map(_.head) // TODO: fix unsafe
-      case token :: rest => Left(ParsingError.NoPrefixExpression(token))
+        parseIfExpression(rest)
+      case token :: rest => Left(List(ParsingError.NoPrefixExpression(token)))
 
   private def parseIfExpression(tokens: List[Token])
       : Either[List[ParsingError], (Expression.If, List[Token])] =
     tokens match
       case Token.LeftParen :: rest =>
         parseExpression(rest, Precedence.Lowest) match
-          case Left(error) => Left(List(error))
+          case Left(errors) => Left(errors)
           case Right(
                 condition,
                 Token.RightParen :: Token.LeftBrace :: leftoverTokens
@@ -184,8 +186,12 @@ object Parser:
               parseBlock(leftoverTokens, ast, errors)
             case Right(Some(node), leftoverTokens) =>
               parseBlock(leftoverTokens, node :: ast, errors)
-            case Left(error) =>
-              parseBlock(eatUntilExprEnd(currentTokens), ast, error :: errors)
+            case Left(newErrors) =>
+              parseBlock(
+                eatUntilExprEnd(currentTokens),
+                ast,
+                newErrors ::: errors
+              )
 
     parseBlock(tokens, List.empty, List.empty).map: (nodes, leftoverTokens) =>
       Statement.Block(nodes) -> leftoverTokens
@@ -193,9 +199,9 @@ object Parser:
   private def parseInfixExpression(
       left: Expression,
       tokens: List[Token]
-  ): Either[ParsingError, (Expression, List[Token])] =
+  ): Either[List[ParsingError], (Expression, List[Token])] =
     tokens match
-      case Nil => Left(ParsingError.InvalidExpression(Nil))
+      case Nil => Left(List(ParsingError.InvalidExpression(Nil)))
       case (token @ (Token.Plus
           | Token.Minus
           | Token.Asterisk
@@ -207,7 +213,7 @@ object Parser:
         parseExpression(rest, Precedence.of(token)).map:
           (right, leftoverTokens) =>
             Expression.InfixOperator(left, token, right) -> leftoverTokens
-      case token :: _ => Left(ParsingError.NoInfixExpression(token))
+      case token :: _ => Left(List(ParsingError.NoInfixExpression(token)))
 
   private val eatUntilExprEnd = eatUntil(List(Token.EOF, Token.Semicolon))
 
