@@ -28,7 +28,6 @@ object Parser:
     case InvalidFunctionExpression(tokens: List[Token]) extends ParsingError
     case InvalidFunctionParameters(tokens: List[Token]) extends ParsingError
     case InvalidCallArguments(tokens: List[Token])      extends ParsingError
-    /* Internal errors */
     case InvalidBlock(tokens: List[Token]) extends ParsingError
 
   def parse(tokens: List[Token]): Either[List[ParsingError], Program] =
