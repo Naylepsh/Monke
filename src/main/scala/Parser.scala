@@ -56,8 +56,8 @@ object Parser:
       case Nil | (Token.EOF :: Nil) => Right(None -> List.empty)
       // Keep it for now, until the rest of the parsing is not fully fleshed out
       case Token.Semicolon :: rest => Right(None -> rest)
-      case all @ Token.Let :: rest =>
-        parseLetStatement(rest).map: (expr, leftoverTokens) =>
+      case all @ Token.Let :: _ =>
+        parseLetStatement(all).map: (expr, leftoverTokens) =>
           Some(expr) -> leftoverTokens
       case all @ Token.Return :: rest =>
         parseExpression(rest, Precedence.Lowest).map: (expr, leftoverTokens) =>
@@ -68,9 +68,8 @@ object Parser:
 
   private def parseLetStatement(tokens: List[Token]) =
     tokens match
-      case all @ Token.Identifier(identifier)
-          :: Token.Assign
-          :: rest => parseExpression(rest, Precedence.Lowest).map:
+      case _ :: (all @ Token.Identifier(identifier) :: Token.Assign :: rest) =>
+        parseExpression(rest, Precedence.Lowest).map:
           (expression, leftoverTokens) =>
             Statement.Let(identifier, expression) -> leftoverTokens
       case _ => Left(List(ParsingError.InvalidLetExpression(tokens)))
