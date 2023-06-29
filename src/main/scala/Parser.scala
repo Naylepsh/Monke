@@ -123,13 +123,12 @@ object Parser:
             case (expression, Token.RightParen :: rest) =>
               Right(expression -> rest)
             case _ => Left(List(ParsingError.InvalidExpression(all)))
-      case all @ Token.If :: rest =>
-        parseIfExpression(rest)
-      case token :: rest => Left(List(ParsingError.NoPrefixExpression(token)))
+      case all @ Token.If :: _ => parseIfExpression(all)
+      case token :: rest       => Left(List(ParsingError.NoPrefixExpression(token)))
 
   private def parseIfExpression(tokens: List[Token]) =
     tokens match
-      case Token.LeftParen :: rest =>
+      case _ :: Token.LeftParen :: rest =>
         parseExpression(rest, Precedence.Lowest).flatMap:
           case (
                 condition,
