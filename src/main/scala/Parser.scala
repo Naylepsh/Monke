@@ -24,6 +24,8 @@ object Parser:
     case UnmatchedCase(tokens: List[Token])         extends ParsingError
     case MissingClosingBracket(tokens: List[Token]) extends ParsingError
     case InvalidIfExpression(tokens: List[Token])   extends ParsingError
+    /* Internal errors */
+    case InvalidBlock(tokens: List[Token]) extends ParsingError
 
   def parse(tokens: List[Token]): Either[List[ParsingError], Program] =
     parse(tokens, List.empty, List.empty).map(Program(_))
@@ -131,7 +133,7 @@ object Parser:
         parseExpression(rest, Precedence.Lowest).flatMap:
           case (
                 condition,
-                Token.RightParen :: Token.LeftBrace :: leftoverTokens
+                Token.RightParen :: leftoverTokens
               ) =>
             parseIfBodies(leftoverTokens).map:
               case (consequence, alternative, leftoverTokens) =>
@@ -146,7 +148,7 @@ object Parser:
 
   private def parseIfBodies(tokens: List[Token]) =
     parseBlockStatement(tokens).flatMap:
-      case (consequence, Token.Else :: Token.LeftBrace :: leftoverTokens) =>
+      case (consequence, Token.Else :: leftoverTokens) =>
         parseBlockStatement(leftoverTokens).map:
           (alternative, leftoverTokens) =>
             (consequence, Some(alternative), leftoverTokens)
@@ -180,8 +182,12 @@ object Parser:
                 newErrors ::: errors
               )
 
-    parseBlock(tokens, List.empty, List.empty).map: (nodes, leftoverTokens) =>
-      Statement.Block(nodes) -> leftoverTokens
+    tokens match
+      case _ :: tokens =>
+        parseBlock(tokens, List.empty, List.empty)
+          .map: (nodes, leftoverTokens) =>
+            Statement.Block(nodes) -> leftoverTokens
+      case _ => Left(List(ParsingError.InvalidBlock(tokens)))
 
   private def parseInfixExpression(
       left: Expression,
