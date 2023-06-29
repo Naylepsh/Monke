@@ -13,6 +13,7 @@ object Parser:
         case (Token.LesserThan | Token.GreaterThan) => LessGreater
         case (Token.Plus | Token.Minus)             => Sum
         case (Token.Asterisk | Token.Slash)         => Product
+        case Token.LeftParen                        => Call
         case _                                      => Lowest
 
   enum ParsingError:
@@ -26,6 +27,7 @@ object Parser:
     case InvalidIfExpression(tokens: List[Token])       extends ParsingError
     case InvalidFunctionExpression(tokens: List[Token]) extends ParsingError
     case InvalidFunctionParameters(tokens: List[Token]) extends ParsingError
+    case InvalidCallArguments(tokens: List[Token])      extends ParsingError
     /* Internal errors */
     case InvalidBlock(tokens: List[Token]) extends ParsingError
 
@@ -232,7 +234,32 @@ object Parser:
         parseExpression(rest, Precedence.of(token)).map:
           (right, leftoverTokens) =>
             Expression.InfixOperator(left, token, right) -> leftoverTokens
+      case all @ Token.LeftParen :: _ =>
+        parseCallArguments(all).map: (args, leftoverTokens) =>
+          Expression.Call(left, args) -> leftoverTokens
       case token :: _ => Left(List(ParsingError.NoInfixExpression(token)))
+
+  private def parseCallArguments(tokens: List[Token]) =
+    @annotation.tailrec
+    def parseArguments(
+        tokens: List[Token],
+        args: List[Expression]
+    ): Either[List[ParsingError], (List[Expression], List[Token])] =
+      tokens match
+        case Nil                      => Left(List(ParsingError.InvalidCallArguments(tokens)))
+        case Token.RightParen :: rest => Right(args.reverse -> rest)
+        case tokens => parseExpression(tokens, Precedence.Lowest) match
+            case Left(errors) => Left(errors)
+            case Right(arg, Token.RightParen :: rest) =>
+              Right((arg :: args).reverse -> rest)
+            case Right(arg, Token.Comma :: rest) =>
+              parseArguments(rest, arg :: args)
+            case Right(_, invalidTokens) =>
+              Left(List(ParsingError.InvalidCallArguments(invalidTokens)))
+
+    tokens match
+      case _ :: tokens => parseArguments(tokens, List.empty)
+      case _           => Left(List(ParsingError.InvalidCallArguments(tokens)))
 
   private val eatUntilExprEnd = eatUntil(List(Token.EOF, Token.Semicolon))
 

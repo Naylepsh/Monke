@@ -14,6 +14,8 @@ object AST:
     ) extends Expression
     case Func(parameters: List[Identifier], body: Statement.Block)
         extends Expression
+    case Call(function: Expression, arguments: List[Expression])
+        extends Expression
 
   enum Statement:
     case Let(identifier: String, expression: Expression) extends Statement
@@ -40,6 +42,9 @@ object AST:
           case Expression.Func(parameters, body) =>
             val params = parameters.map(show).mkString(",")
             s"fn($params) ${show(body)}"
+          case Expression.Call(func, arguments) =>
+            val args = arguments.map(show).mkString(",")
+            s"${show(func)}($args)"
           case Statement.Let(identifier, expression) =>
             s"let $identifier = ${show(expression)}"
           case Statement.Return(expression) =>
