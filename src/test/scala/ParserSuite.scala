@@ -332,3 +332,36 @@ class ParserSuite extends munit.FunSuite:
     val ast    = parse(tokens)
 
     assertEquals(ast, expected)
+
+  test("Parse function expression"):
+    val testCases: List[(String, List[Expression.Identifier])] = List(
+      ("fn() { return 42; }", List.empty),
+      ("fn(x) { return 42; }", List(Expression.Identifier("x"))),
+      (
+        "fn(x, y) { return 42; }",
+        List(Expression.Identifier("x"), Expression.Identifier("y"))
+      )
+    )
+    testCases.foreach: (input, expectedParameters) =>
+      val tokens = Lexer.tokenize(input)
+      val ast    = parse(tokens)
+
+      assertEquals(
+        ast,
+        Right(
+          Program(
+            List(
+              Statement.Expr(
+                Expression.Func(
+                  expectedParameters,
+                  Statement.Block(
+                    List(
+                      Statement.Return(Expression.IntegerLiteral(42))
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )

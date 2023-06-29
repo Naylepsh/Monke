@@ -16,14 +16,16 @@ object Parser:
         case _                                      => Lowest
 
   enum ParsingError:
-    case InvalidInteger(value: String)              extends ParsingError
-    case InvalidLetExpression(tokens: List[Token])  extends ParsingError
-    case InvalidExpression(tokens: List[Token])     extends ParsingError
-    case NoPrefixExpression(token: Token)           extends ParsingError
-    case NoInfixExpression(token: Token)            extends ParsingError
-    case UnmatchedCase(tokens: List[Token])         extends ParsingError
-    case MissingClosingBracket(tokens: List[Token]) extends ParsingError
-    case InvalidIfExpression(tokens: List[Token])   extends ParsingError
+    case InvalidInteger(value: String)                  extends ParsingError
+    case InvalidLetExpression(tokens: List[Token])      extends ParsingError
+    case InvalidExpression(tokens: List[Token])         extends ParsingError
+    case NoPrefixExpression(token: Token)               extends ParsingError
+    case NoInfixExpression(token: Token)                extends ParsingError
+    case UnmatchedCase(tokens: List[Token])             extends ParsingError
+    case MissingClosingBracket(tokens: List[Token])     extends ParsingError
+    case InvalidIfExpression(tokens: List[Token])       extends ParsingError
+    case InvalidFunctionExpression(tokens: List[Token]) extends ParsingError
+    case InvalidFunctionParameters(tokens: List[Token]) extends ParsingError
     /* Internal errors */
     case InvalidBlock(tokens: List[Token]) extends ParsingError
 
@@ -117,29 +119,23 @@ object Parser:
           (expression, leftoverTokens) =>
             Expression.PrefixOperator(token, expression) -> leftoverTokens
       case all @ Token.LeftParen :: rest =>
-        parseExpression(rest, Precedence.Lowest)
-          .flatMap:
-            case (expression, Token.RightParen :: rest) =>
-              Right(expression -> rest)
-            case _ => Left(List(ParsingError.InvalidExpression(all)))
-      case all @ Token.If :: _ => parseIfExpression(all)
-      case token :: rest       => Left(List(ParsingError.NoPrefixExpression(token)))
+        parseExpression(rest, Precedence.Lowest).flatMap:
+          case (expression, Token.RightParen :: rest) =>
+            Right(expression -> rest)
+          case _ => Left(List(ParsingError.InvalidExpression(all)))
+      case all @ Token.If :: _   => parseIfExpression(all)
+      case all @ Token.Func :: _ => parseFunctionExpression(all)
+      case token :: rest         => Left(List(ParsingError.NoPrefixExpression(token)))
 
   private def parseIfExpression(tokens: List[Token]) =
     tokens match
       case _ :: Token.LeftParen :: rest =>
         parseExpression(rest, Precedence.Lowest).flatMap:
-          case (
-                condition,
-                Token.RightParen :: leftoverTokens
-              ) =>
+          case (condition, Token.RightParen :: leftoverTokens) =>
             parseIfBodies(leftoverTokens).map:
               case (consequence, alternative, leftoverTokens) =>
-                Expression.If(
-                  condition,
-                  consequence,
-                  alternative
-                ) -> leftoverTokens
+                val ifExpr = Expression.If(condition, consequence, alternative)
+                ifExpr -> leftoverTokens
           case (_, other) =>
             Left(List(ParsingError.InvalidIfExpression(eatUntilExprEnd(other))))
       case other => Left(List(ParsingError.InvalidIfExpression(tokens)))
@@ -186,6 +182,38 @@ object Parser:
           .map: (nodes, leftoverTokens) =>
             Statement.Block(nodes) -> leftoverTokens
       case _ => Left(List(ParsingError.InvalidBlock(tokens)))
+
+  private def parseFunctionExpression(tokens: List[Token]) =
+    tokens match
+      case _ :: (rest @ Token.LeftParen :: _) =>
+        parseFunctionParameters(rest).flatMap: (parameters, leftoverTokens) =>
+          leftoverTokens match
+            case all @ Token.LeftBrace :: rest =>
+              parseBlockStatement(all).map: (body, leftoverTokens) =>
+                Expression.Func(parameters, body) -> leftoverTokens
+            case _ => Left(List(ParsingError.InvalidBlock(leftoverTokens)))
+      case _ => Left(List(ParsingError.InvalidFunctionExpression(tokens)))
+
+  private def parseFunctionParameters(tokens: List[Token]) =
+    @annotation.tailrec
+    def parseParameters(
+        tokens: List[Token],
+        parameters: List[Expression.Identifier]
+    ): Either[List[ParsingError], (List[Expression.Identifier], List[Token])] =
+      tokens match
+        case Token.RightParen :: rest =>
+          Right(parameters.reverse -> rest)
+        case Token.Identifier(value) :: Token.RightParen :: rest =>
+          val identifier: Expression.Identifier = Expression.Identifier(value)
+          Right((identifier :: parameters).reverse -> rest)
+        case Token.Identifier(value) :: Token.Comma :: rest =>
+          parseParameters(rest, Expression.Identifier(value) :: parameters)
+        case invalidTokens =>
+          Left(List(ParsingError.InvalidFunctionParameters(invalidTokens)))
+
+    tokens match
+      case _ :: tokens => parseParameters(tokens, List.empty)
+      case _           => Left(List(ParsingError.InvalidFunctionParameters(tokens)))
 
   private def parseInfixExpression(
       left: Expression,

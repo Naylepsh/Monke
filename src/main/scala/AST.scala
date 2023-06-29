@@ -12,6 +12,8 @@ object AST:
         consequence: Statement.Block,
         alternative: Option[Statement.Block]
     ) extends Expression
+    case Func(parameters: List[Identifier], body: Statement.Block)
+        extends Expression
 
   enum Statement:
     case Let(identifier: String, expression: Expression) extends Statement
