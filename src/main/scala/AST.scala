@@ -40,10 +40,10 @@ object AST:
           case Expression.If(condition, consequence, Some(alternative)) =>
             s"(${show(condition)}) ${show(consequence)} else ${show(alternative)}"
           case Expression.Func(parameters, body) =>
-            val params = parameters.map(show).mkString(",")
+            val params = parameters.map(show).mkString(", ")
             s"fn($params) ${show(body)}"
           case Expression.Call(func, arguments) =>
-            val args = arguments.map(show).mkString(",")
+            val args = arguments.map(show).mkString(", ")
             s"${show(func)}($args)"
           case Statement.Let(identifier, expression) =>
             s"let $identifier = ${show(expression)}"
