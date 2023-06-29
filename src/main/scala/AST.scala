@@ -37,6 +37,9 @@ object AST:
             s"(${show(condition)}) ${show(consequence)}"
           case Expression.If(condition, consequence, Some(alternative)) =>
             s"(${show(condition)}) ${show(consequence)} else ${show(alternative)}"
+          case Expression.Func(parameters, body) =>
+            val params = parameters.map(show).mkString(",")
+            s"fn($params) ${show(body)}"
           case Statement.Let(identifier, expression) =>
             s"let $identifier = ${show(expression)}"
           case Statement.Return(expression) =>
