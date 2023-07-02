@@ -7,7 +7,28 @@ class EvalSuite extends ParametrizedSuite:
     List(
       TestParam(label = "just a value", input = ("42;", 42)),
       TestParam(label = "simple minus int", input = ("-42;", -42)),
-      TestParam(label = "nested minuses", input = ("--42;", 42))
+      TestParam(label = "nested minuses", input = ("--42;", 42)),
+      TestParam(label = "5", input = ("5", 5)),
+      TestParam(label = "10", input = ("10", 10)),
+      TestParam(label = "-5", input = ("-5", -5)),
+      TestParam(label = "-10", input = ("-10", -10)),
+      TestParam(
+        label = "5 + 5 + 5 + 5 - 10",
+        input = ("5 + 5 + 5 + 5 - 10", 10)
+      ),
+      TestParam(label = "2 * 2 * 2 * 2 * 2", input = ("2 * 2 * 2 * 2 * 2", 32)),
+      TestParam(label = "-50 + 100 + -50", input = ("-50 + 100 + -50", 0)),
+      TestParam(label = "5 * 2 + 10", input = ("5 * 2 + 10", 20)),
+      TestParam(label = "5 + 2 * 10", input = ("5 + 2 * 10", 25)),
+      TestParam(label = "20 + 2 * -10", input = ("20 + 2 * -10", 0)),
+      TestParam(label = "50 / 2 * 2 + 10", input = ("50 / 2 * 2 + 10", 60)),
+      TestParam(label = "2 * (5 + 10)", input = ("2 * (5 + 10)", 30)),
+      TestParam(label = "3 * 3 * 3 + 10", input = ("3 * 3 * 3 + 10", 37)),
+      TestParam(label = "3 * (3 * 3) + 10", input = ("3 * (3 * 3) + 10", 37)),
+      TestParam(
+        label = "(5 + 10 * 2 + 15 / 3) * 2 + -10",
+        input = ("(5 + 10 * 2 + 15 / 3) * 2 + -10", 50)
+      )
     )
   ): (input, expectedValue) =>
     val result = eval(input)

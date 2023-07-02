@@ -41,6 +41,20 @@ object Eval:
           case MonkeyObject.IntegerLiteral(value) =>
             Right(MonkeyObject.IntegerLiteral(-value))
           case _ => Left(EvalutationError.InvalidSyntax(node))
+      case Expression.InfixOperator(left, token, right) =>
+        (eval(left), eval(right)) match
+          case (
+                Right(MonkeyObject.IntegerLiteral(leftVal)),
+                Right(MonkeyObject.IntegerLiteral(rightVal))
+              ) =>
+            val result = token match
+              case Token.Plus     => Right(leftVal + rightVal)
+              case Token.Minus    => Right(leftVal - rightVal)
+              case Token.Asterisk => Right(leftVal * rightVal)
+              case Token.Slash    => Right(leftVal / rightVal)
+              case _              => Left(EvalutationError.InvalidSyntax(node))
+            result.map(MonkeyObject.IntegerLiteral(_))
+          case _ => Left(EvalutationError.InvalidSyntax(node))
 
   private val TRUE  = MonkeyObject.BooleanLiteral(true)
   private val FALSE = MonkeyObject.BooleanLiteral(false)
