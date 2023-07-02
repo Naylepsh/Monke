@@ -39,7 +39,15 @@ class EvalSuite extends ParametrizedSuite:
     "Eval boolean expression",
     List(
       TestParam(label = "true", input = ("true;", true)),
-      TestParam(label = "false", input = ("false;", false))
+      TestParam(label = "false", input = ("false;", false)),
+      TestParam(label = "1 < 2", input = ("1 < 2", true)),
+      TestParam(label = "1 > 2", input = ("1 > 2", false)),
+      TestParam(label = "1 < 1", input = ("1 < 1", false)),
+      TestParam(label = "1 > 1", input = ("1 > 1", false)),
+      TestParam(label = "1 == 1", input = ("1 == 1", true)),
+      TestParam(label = "1 != 1", input = ("1 != 1", false)),
+      TestParam(label = "1 == 2", input = ("1 == 2", false)),
+      TestParam(label = "1 != 2", input = ("1 != 2", true))
     )
   ): (input, expectedValue) =>
     val result = eval(input)

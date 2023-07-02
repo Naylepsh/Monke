@@ -47,13 +47,24 @@ object Eval:
                 Right(MonkeyObject.IntegerLiteral(leftVal)),
                 Right(MonkeyObject.IntegerLiteral(rightVal))
               ) =>
-            val result = token match
-              case Token.Plus     => Right(leftVal + rightVal)
-              case Token.Minus    => Right(leftVal - rightVal)
-              case Token.Asterisk => Right(leftVal * rightVal)
-              case Token.Slash    => Right(leftVal / rightVal)
-              case _              => Left(EvalutationError.InvalidSyntax(node))
-            result.map(MonkeyObject.IntegerLiteral(_))
+            token match
+              case Token.Plus =>
+                Right(MonkeyObject.IntegerLiteral(leftVal + rightVal))
+              case Token.Minus =>
+                Right(MonkeyObject.IntegerLiteral(leftVal - rightVal))
+              case Token.Asterisk =>
+                Right(MonkeyObject.IntegerLiteral(leftVal * rightVal))
+              case Token.Slash =>
+                Right(MonkeyObject.IntegerLiteral(leftVal / rightVal))
+              case Token.Equal =>
+                Right(MonkeyObject.BooleanLiteral(leftVal == rightVal))
+              case Token.NotEqual =>
+                Right(MonkeyObject.BooleanLiteral(leftVal != rightVal))
+              case Token.LesserThan =>
+                Right(MonkeyObject.BooleanLiteral(leftVal < rightVal))
+              case Token.GreaterThan =>
+                Right(MonkeyObject.BooleanLiteral(leftVal > rightVal))
+              case _ => Left(EvalutationError.InvalidSyntax(node))
           case _ => Left(EvalutationError.InvalidSyntax(node))
 
   private val TRUE  = MonkeyObject.BooleanLiteral(true)
