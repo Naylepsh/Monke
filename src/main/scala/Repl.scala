@@ -11,7 +11,10 @@ object Repl:
     val ast    = Parser.parse(tokens)
 
     ast match
-      case Left(errors)   => errors.foreach(println)
-      case Right(program) => println(Eval.eval(program).show)
+      case Left(errors) => errors.foreach(println)
+      case Right(program) =>
+        Eval.eval(program) match
+          case Left(error)  => println(error)
+          case Right(value) => println(value.show)
 
     run
