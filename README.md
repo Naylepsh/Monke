@@ -1,8 +1,43 @@
-## sbt project compiled with Scala 3
+## Monke 
+
+Monke is a scala implementation of an interpreter for `Monkey` language based on "Writing an interpreted in GO" book by Thorsten Ball.
+
+### Feature list
+
+#### Variables
+
+```
+let a = 42;
+let b = true;
+```
+
+#### If expressions
+
+```
+let a = if (b == c) {
+    42;
+} else {
+    0;
+}
+```
+
+#### Functions
+
+```
+let add = fn(a, b) {
+    return a + b;
+}
+let result = add(1, 2);
+```
 
 ### Usage
 
-This is a normal sbt project. You can compile code with `sbt compile`, run it with `sbt run`, and `sbt console` will start a Scala 3 REPL.
+Currently only ~REPL~ RPPL is available. To run it execute `sbt run`.
 
-For more information on the sbt-dotty plugin, see the
-[scala3-example-project](https://github.com/scala/scala3-example-project/blob/main/README.md).
+### Misc.
+
+Interpretation is done with 3 distinct steps:
+- Lexer
+- Parser -- using Pratt Parsing
+- [TODO] Evaluator -- using Tree-walking interpreter
+
