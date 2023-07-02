@@ -47,7 +47,19 @@ class EvalSuite extends ParametrizedSuite:
       TestParam(label = "1 == 1", input = ("1 == 1", true)),
       TestParam(label = "1 != 1", input = ("1 != 1", false)),
       TestParam(label = "1 == 2", input = ("1 == 2", false)),
-      TestParam(label = "1 != 2", input = ("1 != 2", true))
+      TestParam(label = "1 != 2", input = ("1 != 2", true)),
+      TestParam(label = "true == true", input = ("true == true", true)),
+      TestParam(label = "false == false", input = ("false == false", true)),
+      TestParam(label = "true == false", input = ("true == false", false)),
+      TestParam(label = "true != false", input = ("true != false", true)),
+      TestParam(label = "false != true", input = ("false != true", true)),
+      TestParam(label = "(1 < 2) == true", input = ("(1 < 2) == true", true)),
+      TestParam(
+        label = "(1 < 2) == false",
+        input = ("(1 < 2) == false", false)
+      ),
+      TestParam(label = "(1 > 2) == true", input = ("(1 > 2) == true", false)),
+      TestParam(label = "(1 > 2) == false", input = ("(1 > 2) == false", true))
     )
   ): (input, expectedValue) =>
     val result = eval(input)
