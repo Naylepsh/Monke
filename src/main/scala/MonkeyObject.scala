@@ -4,6 +4,12 @@ enum MonkeyObject:
   case Null                           extends MonkeyObject
 
 object MonkeyObject:
+  def of(value: Boolean): MonkeyObject =
+    if value then TRUE else FALSE
+
+  private val TRUE  = MonkeyObject.BooleanLiteral(true)
+  private val FALSE = MonkeyObject.BooleanLiteral(false)
+
   given Show[MonkeyObject] with
     def show(o: MonkeyObject): String =
       o match
