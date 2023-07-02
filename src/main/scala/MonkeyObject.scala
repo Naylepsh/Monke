@@ -7,6 +7,13 @@ object MonkeyObject:
   def of(value: Boolean): MonkeyObject =
     if value then TRUE else FALSE
 
+  def isTruthy(value: MonkeyObject): Boolean =
+    value match
+      case MonkeyObject.BooleanLiteral(value) => value
+      case MonkeyObject.IntegerLiteral(0)     => false
+      case MonkeyObject.IntegerLiteral(_)     => true
+      case MonkeyObject.Null                  => false
+
   private val TRUE  = MonkeyObject.BooleanLiteral(true)
   private val FALSE = MonkeyObject.BooleanLiteral(false)
 

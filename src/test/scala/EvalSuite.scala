@@ -94,6 +94,44 @@ class EvalSuite extends ParametrizedSuite:
 
     assertEquals(result, Right(MonkeyObject.BooleanLiteral(expectedValue)))
 
+  parametrizedTest(
+    "Eval if expression",
+    List(
+      TestParam(
+        label = "if (true) { 10 }",
+        input = ("if (true) { 10 }", Some(10))
+      ),
+      TestParam(
+        label = "if (false) { 10 }",
+        input = ("if (false) { 10 }", None)
+      ),
+      TestParam(label = "if (1) { 10 }", input = ("if (1) { 10 }", Some(10))),
+      TestParam(
+        label = "if (1 < 2) { 10 }",
+        input = ("if (1 < 2) { 10 }", Some(10))
+      ),
+      TestParam(
+        label = "if (1 > 2) { 10 }",
+        input = ("if (1 > 2) { 10 }", None)
+      ),
+      TestParam(
+        label = "if (1 > 2) { 10 } else { 20 }",
+        input = ("if (1 > 2) { 10 } else { 20 }", Some(20))
+      ),
+      TestParam(
+        label = "if (1 < 2) { 10 } else { 20 }",
+        input = ("if (1 < 2) { 10 } else { 20 }", Some(10))
+      )
+    )
+  ): (input, expectedValue) =>
+    val expectedMonkey = expectedValue
+      .map(MonkeyObject.IntegerLiteral(_))
+      .getOrElse(MonkeyObject.Null)
+
+    val result = eval(input)
+
+    assertEquals(result, Right(expectedMonkey))
+
 object EvalSuite:
   def eval(input: String) =
     Parser
