@@ -5,7 +5,9 @@ import Node.given
 import Program.*
 import Show.*
 
-class ParserSuite extends munit.FunSuite:
+class ParserSuite extends ParametrizedSuite:
+  import ParametrizedSuite.TestParam
+
   test("Parse simple chain of assignments"):
     val input = """let x = 5;
     |let y = 10;
@@ -68,34 +70,54 @@ class ParserSuite extends munit.FunSuite:
 
     assertEquals(ast, expected)
 
-  test("Parse boolean expression statement"):
-    val testCases = List(
-      ("true;", Statement.Expr(Expression.BooleanLiteral(true))),
-      ("false;", Statement.Expr(Expression.BooleanLiteral(false)))
+  parametrizedTest(
+    "Parse boolean expression statement",
+    List(
+      TestParam(
+        label = "true",
+        input = ("true;", Statement.Expr(Expression.BooleanLiteral(true)))
+      ),
+      TestParam(
+        label = "false",
+        input = ("false;", Statement.Expr(Expression.BooleanLiteral(false)))
+      )
     )
-    testCases.foreach: (input, expected) =>
-      val tokens = Lexer.tokenize(input)
-      val ast    = parse(tokens)
+  ): (input, expected) =>
+    val tokens = Lexer.tokenize(input)
+    val ast    = parse(tokens)
 
-      assertEquals(ast, Right(Program(List(expected))))
+    assertEquals(ast, Right(Program(List(expected))))
 
-  test("Parse prefix expression"):
-    val testCases = List(
-      ("!42;", Token.Bang, Expression.IntegerLiteral(42)),
-      ("-42;", Token.Minus, Expression.IntegerLiteral(42)),
-      ("!true;", Token.Bang, Expression.BooleanLiteral(true)),
-      ("!false;", Token.Bang, Expression.BooleanLiteral(false))
+  parametrizedTest(
+    "Parse prefix expression",
+    List(
+      TestParam(
+        label = "!42;",
+        input = ("!42;", Token.Bang, Expression.IntegerLiteral(42))
+      ),
+      TestParam(
+        label = "-42;",
+        input = ("-42;", Token.Minus, Expression.IntegerLiteral(42))
+      ),
+      TestParam(
+        label = "!true;",
+        input = ("!true;", Token.Bang, Expression.BooleanLiteral(true))
+      ),
+      TestParam(
+        label = "!false;",
+        input = ("!false;", Token.Bang, Expression.BooleanLiteral(false))
+      )
     )
-    testCases.foreach: (input, expectedOp, expectedExpr) =>
-      val expected =
-        Right(Program(List(Statement.Expr(Expression.PrefixOperator(
-          expectedOp,
-          expectedExpr
-        )))))
-      val tokens = Lexer.tokenize(input)
-      val ast    = parse(tokens)
+  ): (input, expectedOp, expectedExpr) =>
+    val expected =
+      Right(Program(List(Statement.Expr(Expression.PrefixOperator(
+        expectedOp,
+        expectedExpr
+      )))))
+    val tokens = Lexer.tokenize(input)
+    val ast    = parse(tokens)
 
-      assertEquals(ast, expected)
+    assertEquals(ast, expected)
 
   test("Parse nested prefix expression"):
     val input = "!!42;"
@@ -108,186 +130,286 @@ class ParserSuite extends munit.FunSuite:
 
     assertEquals(ast, expected)
 
-  test("Parse infix expression"):
-    val testCases = List(
-      (
-        "5 + 5;",
-        Expression.IntegerLiteral(5),
-        Token.Plus,
-        Expression.IntegerLiteral(5)
+  parametrizedTest(
+    "Parse infix expression",
+    List(
+      TestParam(
+        label = "5 + 5;",
+        input = (
+          "5 + 5;",
+          Expression.IntegerLiteral(5),
+          Token.Plus,
+          Expression.IntegerLiteral(5)
+        )
       ),
-      (
-        "5 - 5;",
-        Expression.IntegerLiteral(5),
-        Token.Minus,
-        Expression.IntegerLiteral(5)
+      TestParam(
+        label = "5 - 5;",
+        input = (
+          "5 - 5;",
+          Expression.IntegerLiteral(5),
+          Token.Minus,
+          Expression.IntegerLiteral(5)
+        )
       ),
-      (
-        "5 * 5;",
-        Expression.IntegerLiteral(5),
-        Token.Asterisk,
-        Expression.IntegerLiteral(5)
+      TestParam(
+        label = "5 * 5;",
+        input = (
+          "5 * 5;",
+          Expression.IntegerLiteral(5),
+          Token.Asterisk,
+          Expression.IntegerLiteral(5)
+        )
       ),
-      (
-        "5 / 5;",
-        Expression.IntegerLiteral(5),
-        Token.Slash,
-        Expression.IntegerLiteral(5)
+      TestParam(
+        label = "5 / 5;",
+        input = (
+          "5 / 5;",
+          Expression.IntegerLiteral(5),
+          Token.Slash,
+          Expression.IntegerLiteral(5)
+        )
       ),
-      (
-        "5 > 5;",
-        Expression.IntegerLiteral(5),
-        Token.GreaterThan,
-        Expression.IntegerLiteral(5)
+      TestParam(
+        label = "5 > 5;",
+        input = (
+          "5 > 5;",
+          Expression.IntegerLiteral(5),
+          Token.GreaterThan,
+          Expression.IntegerLiteral(5)
+        )
       ),
-      (
-        "5 < 5;",
-        Expression.IntegerLiteral(5),
-        Token.LesserThan,
-        Expression.IntegerLiteral(5)
+      TestParam(
+        label = "5 < 5;",
+        input = (
+          "5 < 5;",
+          Expression.IntegerLiteral(5),
+          Token.LesserThan,
+          Expression.IntegerLiteral(5)
+        )
       ),
-      (
-        "5 == 5;",
-        Expression.IntegerLiteral(5),
-        Token.Equal,
-        Expression.IntegerLiteral(5)
+      TestParam(
+        label = "5 == 5;",
+        input = (
+          "5 == 5;",
+          Expression.IntegerLiteral(5),
+          Token.Equal,
+          Expression.IntegerLiteral(5)
+        )
       ),
-      (
-        "5 != 5;",
-        Expression.IntegerLiteral(5),
-        Token.NotEqual,
-        Expression.IntegerLiteral(5)
+      TestParam(
+        label = "5 != 5;",
+        input = (
+          "5 != 5;",
+          Expression.IntegerLiteral(5),
+          Token.NotEqual,
+          Expression.IntegerLiteral(5)
+        )
       ),
-      (
-        "true == true",
-        Expression.BooleanLiteral(true),
-        Token.Equal,
-        Expression.BooleanLiteral(true)
+      TestParam(
+        label = "true == true",
+        input = (
+          "true == true",
+          Expression.BooleanLiteral(true),
+          Token.Equal,
+          Expression.BooleanLiteral(true)
+        )
       ),
-      (
-        "true != false",
-        Expression.BooleanLiteral(true),
-        Token.NotEqual,
-        Expression.BooleanLiteral(false)
+      TestParam(
+        label = "true != false",
+        input = (
+          "true != false",
+          Expression.BooleanLiteral(true),
+          Token.NotEqual,
+          Expression.BooleanLiteral(false)
+        )
       ),
-      (
-        "false == false",
-        Expression.BooleanLiteral(false),
-        Token.Equal,
-        Expression.BooleanLiteral(false)
+      TestParam(
+        label = "false == false",
+        input = (
+          "false == false",
+          Expression.BooleanLiteral(false),
+          Token.Equal,
+          Expression.BooleanLiteral(false)
+        )
       )
     )
+  ): (input, expectedLeft, expectedOp, expectedRight) =>
+    val expected = Right(Program(List(Statement.Expr(Expression.InfixOperator(
+      expectedLeft,
+      expectedOp,
+      expectedRight
+    )))))
+    val tokens = Lexer.tokenize(input)
+    val ast    = parse(tokens)
 
-    testCases.foreach: (input, expectedLeft, expectedOp, expectedRight) =>
-      val expected = Right(Program(List(Statement.Expr(Expression.InfixOperator(
-        expectedLeft,
-        expectedOp,
-        expectedRight
-      )))))
-      val tokens = Lexer.tokenize(input)
-      val ast    = parse(tokens)
+    assertEquals(ast, expected)
 
-      assertEquals(ast, expected)
-
-  test("Operator precendence"):
-    val testCases = List(
-      ("-a * b", "((-a) * b)"),
-      (
-        "!-a",
-        "(!(-a))",
+  parametrizedTest(
+    "Operator precendence",
+    List(
+      TestParam(label = "-a * b", input = ("-a * b", "((-a) * b)")),
+      TestParam(
+        label = "!-a",
+        input = (
+          "!-a",
+          "(!(-a))",
+        )
       ),
-      (
-        "a + b + c",
-        "((a + b) + c)",
+      TestParam(
+        label = "a + b + c",
+        input = (
+          "a + b + c",
+          "((a + b) + c)",
+        )
       ),
-      (
-        "a + b - c",
-        "((a + b) - c)",
+      TestParam(
+        label = "a + b - c",
+        input = (
+          "a + b - c",
+          "((a + b) - c)",
+        )
       ),
-      (
-        "a * b * c",
-        "((a * b) * c)",
+      TestParam(
+        label = "a * b * c",
+        input = (
+          "a * b * c",
+          "((a * b) * c)",
+        )
       ),
-      (
-        "a * b / c",
-        "((a * b) / c)",
+      TestParam(
+        label = "a * b / c",
+        input = (
+          "a * b / c",
+          "((a * b) / c)",
+        )
       ),
-      (
-        "a + b / c",
-        "(a + (b / c))",
+      TestParam(
+        label = "a + b / c",
+        input = (
+          "a + b / c",
+          "(a + (b / c))",
+        )
       ),
-      (
-        "a + b * c + d / e - f",
-        "(((a + (b * c)) + (d / e)) - f)",
+      TestParam(
+        label = "a + b * c + d / e - f",
+        input = (
+          "a + b * c + d / e - f",
+          "(((a + (b * c)) + (d / e)) - f)",
+        )
       ),
-      (
-        "3 + 4; -5 * 5",
-        """(3 + 4)
+      TestParam(
+        label = "3 + 4; -5 * 5",
+        input = (
+          "3 + 4; -5 * 5",
+          """(3 + 4)
         |((-5) * 5)""".stripMargin,
+        )
       ),
-      (
-        "5 > 4 == 3 < 4",
-        "((5 > 4) == (3 < 4))",
+      TestParam(
+        label = "5 > 4 == 3 < 4",
+        input = (
+          "5 > 4 == 3 < 4",
+          "((5 > 4) == (3 < 4))",
+        )
       ),
-      (
-        "5 < 4 != 3 > 4",
-        "((5 < 4) != (3 > 4))",
+      TestParam(
+        label = "5 < 4 != 3 > 4",
+        input = (
+          "5 < 4 != 3 > 4",
+          "((5 < 4) != (3 > 4))",
+        )
       ),
-      (
-        "3 + 4 * 5 == 3 * 1 + 4 * 5",
-        "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+      TestParam(
+        label = "3 + 4 * 5 == 3 * 1 + 4 * 5",
+        input = (
+          "3 + 4 * 5 == 3 * 1 + 4 * 5",
+          "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+        )
       ),
-      (
-        "3 + 4 * 5 == 3 * 1 + 4 * 5",
-        "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+      TestParam(
+        label = "3 + 4 * 5 == 3 * 1 + 4 * 5",
+        input = (
+          "3 + 4 * 5 == 3 * 1 + 4 * 5",
+          "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+        )
       ),
-      (
-        "3 > 5 == false",
-        "((3 > 5) == false)",
+      TestParam(
+        label = "3 > 5 == false",
+        input = (
+          "3 > 5 == false",
+          "((3 > 5) == false)",
+        )
       ),
-      (
-        "3 < 5 == true",
-        "((3 < 5) == true)",
+      TestParam(
+        label = "3 < 5 == true",
+        input = (
+          "3 < 5 == true",
+          "((3 < 5) == true)",
+        )
       ),
-      (
-        "1 + (2 + 3) + 4",
-        "((1 + (2 + 3)) + 4)"
+      TestParam(
+        label = "1 + (2 + 3) + 4",
+        input = (
+          "1 + (2 + 3) + 4",
+          "((1 + (2 + 3)) + 4)"
+        )
       ),
-      (
-        "(5 + 5) * 2",
-        "((5 + 5) * 2)"
+      TestParam(
+        label = "(5 + 5) * 2",
+        input = (
+          "(5 + 5) * 2",
+          "((5 + 5) * 2)"
+        )
       ),
-      (
-        "2 / (5 + 5)",
-        "(2 / (5 + 5))",
+      TestParam(
+        label = "2 / (5 + 5)",
+        input = (
+          "2 / (5 + 5)",
+          "(2 / (5 + 5))",
+        )
       ),
-      (
-        "-(5 + 5)",
-        "(-(5 + 5))"
+      TestParam(
+        label = "-(5 + 5)",
+        input = (
+          "-(5 + 5)",
+          "(-(5 + 5))"
+        )
       ),
-      (
-        "!(true == true)",
-        "(!(true == true))"
+      TestParam(
+        label = "!(true == true)",
+        input = (
+          "!(true == true)",
+          "(!(true == true))"
+        )
       ),
-      (
-        "a + add(b * c) + d",
-        "((a + add((b * c))) + d)",
+      TestParam(
+        label = "a + add(b * c) + d",
+        input = (
+          "a + add(b * c) + d",
+          "((a + add((b * c))) + d)",
+        )
       ),
-      (
-        "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
-        "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+      TestParam(
+        label = "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+        input = (
+          "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+          "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+        )
       ),
-      (
-        "add(a + b + c * d / f + g)",
-        "add((((a + b) + ((c * d) / f)) + g))"
+      TestParam(
+        label = "add(a + b + c * d / f + g)",
+        input = (
+          "add(a + b + c * d / f + g)",
+          "add((((a + b) + ((c * d) / f)) + g))"
+        )
       )
     )
-    testCases.foreach: (input, expected) =>
-      val tokens = Lexer.tokenize(input)
+  ): (input, expected) =>
+    val tokens = Lexer.tokenize(input)
 
-      val ast = Parser.parse(tokens)
+    val ast = Parser.parse(tokens)
 
-      assertEquals(ast.map(_.show), Right(expected))
+    assertEquals(ast.map(_.show), Right(expected))
 
   test("Parse simple if expression"):
     val input = "if (x == y) { return true; }"
@@ -345,31 +467,37 @@ class ParserSuite extends munit.FunSuite:
 
     assertEquals(ast, expected)
 
-  test("Parse function expression"):
-    val testCases: List[(String, List[Expression.Identifier])] = List(
-      ("fn() { return 42; }", List.empty),
-      ("fn(x) { return 42; }", List(Expression.Identifier("x"))),
-      (
-        "fn(x, y) { return 42; }",
-        List(Expression.Identifier("x"), Expression.Identifier("y"))
+  parametrizedTest(
+    "Parse function expression",
+    List[TestParam[(String, List[Expression.Identifier])]](
+      TestParam(label = "0 args", input = ("fn() { return 42; }", List.empty)),
+      TestParam(
+        label = "1 arg",
+        input = ("fn(x) { return 42; }", List(Expression.Identifier("x")))
+      ),
+      TestParam(
+        label = "2 args",
+        input = (
+          "fn(x, y) { return 42; }",
+          List(Expression.Identifier("x"), Expression.Identifier("y"))
+        )
       )
     )
-    testCases.foreach: (input, expectedParameters) =>
-      val tokens = Lexer.tokenize(input)
-      val ast    = parse(tokens)
+  ): (input, expectedParameters) =>
+    val tokens = Lexer.tokenize(input)
+    val ast    = parse(tokens)
 
-      assertEquals(
-        ast,
-        Right(
-          Program(
-            List(
-              Statement.Expr(
-                Expression.Func(
-                  expectedParameters,
-                  Statement.Block(
-                    List(
-                      Statement.Return(Expression.IntegerLiteral(42))
-                    )
+    assertEquals(
+      ast,
+      Right(
+        Program(
+          List(
+            Statement.Expr(
+              Expression.Func(
+                expectedParameters,
+                Statement.Block(
+                  List(
+                    Statement.Return(Expression.IntegerLiteral(42))
                   )
                 )
               )
@@ -377,21 +505,22 @@ class ParserSuite extends munit.FunSuite:
           )
         )
       )
+    )
 
-  test("Parse call expression"):
-    val testCases = List(
-      ("sum()", Expression.Identifier("sum"), List.empty),
-      (
+  parametrizedTest("Parse call expression",
+    List(
+      TestParam(label = "0 args", input = ("sum()", Expression.Identifier("sum"), List.empty)),
+      TestParam(label = "1 args", input = (
         "sum(x)",
         Expression.Identifier("sum"),
         List(Expression.Identifier("x"))
-      ),
-      (
+      )),
+      TestParam(label = "2 args", input = (
         "sum(x, y)",
         Expression.Identifier("sum"),
         List(Expression.Identifier("x"), Expression.Identifier("y"))
-      ),
-      (
+      )),
+      TestParam(label = "2 args where one is expression", input = (
         "sum(x, y + z)",
         Expression.Identifier("sum"),
         List(
@@ -402,17 +531,17 @@ class ParserSuite extends munit.FunSuite:
             Expression.Identifier("z")
           )
         )
-      ),
-      (
+      )),
+      TestParam(label = "immediately invoked function", input = (
         "fn(x) { return x; }(42)",
         Expression.Func(
           List(Expression.Identifier("x")),
           Statement.Block(List(Statement.Return(Expression.Identifier("x"))))
         ),
         List(Expression.IntegerLiteral(42))
+      ))
       )
-    )
-    testCases.foreach: (input, expectedFunc, expectedArgs) =>
+  ): (input, expectedFunc, expectedArgs) =>
       val tokens = Lexer.tokenize(input)
       val ast    = parse(tokens)
 
