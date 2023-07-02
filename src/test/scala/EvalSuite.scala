@@ -1,4 +1,5 @@
-class EvalSuite extends munit.FunSuite:
+class EvalSuite extends ParametrizedSuite:
+  import ParametrizedSuite.TestParam
   import EvalSuite.*
 
   test("Eval integer literal"):
@@ -9,22 +10,34 @@ class EvalSuite extends munit.FunSuite:
 
     assertEquals(result, Right(expected))
 
-  test("Eval boolean literal"):
-    val testCases = List(
-      ("true;", MonkeyObject.BooleanLiteral(true)),
-      ("false;", MonkeyObject.BooleanLiteral(false))
+  parametrizedTest(
+    "Eval boolean literal",
+    List(
+      TestParam(
+        label = "true",
+        input = ("true;", MonkeyObject.BooleanLiteral(true))
+      ),
+      TestParam(
+        label = "false",
+        input = ("false;", MonkeyObject.BooleanLiteral(false))
+      )
     )
-    testCases.foreach: (input, expected) =>
-      val result = eval(input)
+  ): (input, expected) =>
+    val result = eval(input)
 
-      assertEquals(result, Right(expected))
+    assertEquals(result, Right(expected))
 
-  test("Eval empty program"):
-    val testCases = List("", ";", ";;")
-    testCases.foreach: input =>
-      val result = eval(input)
+  parametrizedTest(
+    "Eval empty program",
+    List(
+      TestParam(label = "", input = ""),
+      TestParam(label = ";", input = ";"),
+      TestParam(label = ";;", input = ";;")
+    )
+  ): (input) =>
+    val result = eval(input)
 
-      assertEquals(result, Right(MonkeyObject.Null))
+    assertEquals(result, Right(MonkeyObject.Null))
 
 object EvalSuite:
   def eval(input: String) =
