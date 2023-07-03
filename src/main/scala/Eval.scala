@@ -5,7 +5,9 @@ object Eval:
     case InvalidSyntax(node: Node) extends EvalutationError
 
   def eval(program: AST.Program): Either[EvalutationError, MonkeyObject] =
-    evalNodes(program.nodes, None).map(_.getOrElse(MonkeyObject.Null))
+    evalNodes(program.nodes, None).map:
+      case None        => MonkeyObject.Null
+      case Some(other) => other
 
   @annotation.tailrec
   private def evalNodes(
@@ -16,8 +18,9 @@ object Eval:
       case Nil => Right(result)
       case node :: rest =>
         eval(node) match
-          case Left(error)   => Left(error)
-          case Right(result) => evalNodes(rest, Some(result))
+          case Left(error)                            => Left(error)
+          case Right(MonkeyObject.ReturnValue(value)) => Right(Some(value))
+          case Right(result)                          => evalNodes(rest, Some(result))
 
   private def eval(node: Node): Either[EvalutationError, MonkeyObject] =
     node match
@@ -33,7 +36,26 @@ object Eval:
       case Expression.If(condition, consequence, alternative) =>
         evalIfExpression(condition, consequence, alternative)
       case Statement.Block(nodes) =>
-        evalNodes(nodes, None).map(_.getOrElse(MonkeyObject.Null))
+        evalBlockStatement(nodes)
+      case Statement.Return(expr) =>
+        eval(expr).map(MonkeyObject.ReturnValue(_))
+
+  private def evalBlockStatement(nodes: List[Node]) =
+    @annotation.tailrec
+    def evalBlock(
+        nodes: List[Node],
+        result: Option[MonkeyObject]
+    ): Either[EvalutationError, Option[MonkeyObject]] =
+      nodes match
+        case Nil => Right(result)
+        case node :: rest =>
+          eval(node) match
+            case Left(error) => Left(error)
+            case Right(returnValue @ MonkeyObject.ReturnValue(value)) =>
+              Right(Some(returnValue))
+            case Right(result) => evalBlock(rest, Some(result))
+
+    evalBlock(nodes, None).map(_.getOrElse(MonkeyObject.Null))
 
   private def evalIfExpression(
       condition: Expression,

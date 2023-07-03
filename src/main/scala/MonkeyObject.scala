@@ -1,7 +1,8 @@
 enum MonkeyObject:
-  case IntegerLiteral(value: Int)     extends MonkeyObject
-  case BooleanLiteral(value: Boolean) extends MonkeyObject
-  case Null                           extends MonkeyObject
+  case IntegerLiteral(value: Int)       extends MonkeyObject
+  case BooleanLiteral(value: Boolean)   extends MonkeyObject
+  case Null                             extends MonkeyObject
+  case ReturnValue(value: MonkeyObject) extends MonkeyObject
 
 object MonkeyObject:
   def of(value: Boolean): MonkeyObject =
@@ -13,6 +14,7 @@ object MonkeyObject:
       case MonkeyObject.IntegerLiteral(0)     => false
       case MonkeyObject.IntegerLiteral(_)     => true
       case MonkeyObject.Null                  => false
+      case _                                  => true
 
   private val TRUE  = MonkeyObject.BooleanLiteral(true)
   private val FALSE = MonkeyObject.BooleanLiteral(false)
@@ -23,3 +25,4 @@ object MonkeyObject:
         case IntegerLiteral(value) => value.toString
         case BooleanLiteral(value) => value.toString
         case Null                  => "null"
+        case ReturnValue(value)    => s"return ${show(value)}"

@@ -132,6 +132,35 @@ class EvalSuite extends ParametrizedSuite:
 
     assertEquals(result, Right(expectedMonkey))
 
+  parametrizedTest(
+    "Eval return statement",
+    List(
+      TestParam(label = "return 10;", input = ("return 10;", 10)),
+      TestParam(label = "return 10; 9;", input = ("return 10; 9;", 10)),
+      TestParam(label = "return 2 * 5; 9;", input = ("return 2 * 5; 9;", 10)),
+      TestParam(
+        label = "9; return 2 * 5; 9;",
+        input = ("9; return 2 * 5; 9;", 10)
+      ),
+      TestParam(
+        label = "Return in nested blocks",
+        input = (
+          s"""
+          |if (10 > 1) {
+          |   if (10 > 1) {
+          |     return 10;
+          |   }
+          |   return 1;
+          |}""".stripMargin,
+          10
+        )
+      )
+    )
+  ): (input, expected) =>
+    val result = eval(input)
+
+    assertEquals(result, Right(MonkeyObject.IntegerLiteral(expected)))
+
 object EvalSuite:
   def eval(input: String) =
     Parser
