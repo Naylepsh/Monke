@@ -215,7 +215,11 @@ object EvalSuite:
   def eval(input: String) =
     Parser
       .parse(Lexer.tokenize(input))
-      .map(Eval.eval)
+      .map: tokens =>
+        Eval
+          .eval(tokens, Eval.Environment.empty)
+          .map: (result, _) =>
+            result
       // Theoretically unsafe, but in this test suite we don't care about parsing failures
       .toOption
       .get
