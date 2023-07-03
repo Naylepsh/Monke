@@ -2,83 +2,128 @@ import AST.*
 
 object Eval:
   enum EvalutationError:
-    case InvalidSyntax(node: Node) extends EvalutationError
+    case InvalidSyntax(node: Node)         extends EvalutationError
+    case UndefinedIdentifier(name: String) extends EvalutationError
 
-  def eval(program: AST.Program): Either[EvalutationError, MonkeyObject] =
-    evalNodes(program.nodes, None).map:
-      case None        => MonkeyObject.Null
-      case Some(other) => other
+  type Environment = List[(String, MonkeyObject)]
+  object Environment:
+    def empty: Environment = List.empty
+
+    extension (env: Environment)
+      def find(name: String)
+          : Either[EvalutationError.UndefinedIdentifier, MonkeyObject] =
+        (env.find: identifier =>
+          identifier._1 == name) match
+          case None             => Left(EvalutationError.UndefinedIdentifier(name))
+          case Some((_, value)) => Right(value)
+
+  def eval(
+      program: AST.Program,
+      env: Environment = Environment.empty
+  ): Either[EvalutationError, (MonkeyObject, Environment)] =
+    evalNodes(program.nodes, env, None).map:
+      case (None, _)                   => (MonkeyObject.Null, env)
+      case (Some(result), environment) => (result, environment)
 
   @annotation.tailrec
   private def evalNodes(
       nodes: List[Node],
+      environment: Environment,
       result: Option[MonkeyObject]
-  ): Either[EvalutationError, Option[MonkeyObject]] =
+  ): Either[EvalutationError, (Option[MonkeyObject], Environment)] =
     nodes match
-      case Nil => Right(result)
+      case Nil => Right(result, environment)
       case node :: rest =>
-        eval(node) match
-          case Left(error)                            => Left(error)
-          case Right(MonkeyObject.ReturnValue(value)) => Right(Some(value))
-          case Right(result)                          => evalNodes(rest, Some(result))
+        eval(node, environment) match
+          case Left(error) => Left(error)
+          case Right(MonkeyObject.ReturnValue(value), env) =>
+            Right(Some(value), env)
+          case Right(result, env) => evalNodes(rest, env, Some(result))
 
-  private def eval(node: Node): Either[EvalutationError, MonkeyObject] =
+  import Environment.find
+
+  private def eval(
+      node: Node,
+      env: Environment
+  ): Either[EvalutationError, (MonkeyObject, Environment)] =
     node match
       case Expression.IntegerLiteral(value) =>
-        Right(MonkeyObject.IntegerLiteral(value))
+        Right(MonkeyObject.IntegerLiteral(value), env)
       case Expression.BooleanLiteral(value) =>
-        Right(MonkeyObject.of(value))
-      case Statement.Expr(expr) => eval(expr)
+        Right(MonkeyObject.of(value), env)
+      case Expression.Identifier(identifier) =>
+        env.find(identifier).map: value =>
+          (value, env)
+      case Statement.Expr(expr) => eval(expr, env)
       case Expression.PrefixOperator(token, expr) =>
-        evalPrefixExpression(token, expr, node)
+        evalPrefixExpression(token, expr, node, env).map: result =>
+          (result, env)
       case Expression.InfixOperator(left, token, right) =>
-        evalInfixExpression(left, token, right, node)
+        evalInfixExpression(left, token, right, node, env).map: result =>
+          (result, env)
       case Expression.If(condition, consequence, alternative) =>
-        evalIfExpression(condition, consequence, alternative)
+        evalIfExpression(condition, consequence, alternative, env).map:
+          result =>
+            (result, env)
       case Statement.Block(nodes) =>
-        evalBlockStatement(nodes)
+        evalBlockStatement(nodes, env).map: result =>
+          (result, env)
       case Statement.Return(expr) =>
-        eval(expr).map(MonkeyObject.ReturnValue(_))
+        eval(expr, env).map: (expr, env) =>
+          (MonkeyObject.ReturnValue(expr), env)
+      case Statement.Let(identifier, expr) =>
+        eval(expr, env).map: (result, _) =>
+          (MonkeyObject.Null, (identifier -> result) :: env)
 
-  private def evalBlockStatement(nodes: List[Node]) =
+  private def evalBlockStatement(nodes: List[Node], env: Environment) =
     @annotation.tailrec
     def evalBlock(
         nodes: List[Node],
+        env: Environment,
         result: Option[MonkeyObject]
     ): Either[EvalutationError, Option[MonkeyObject]] =
       nodes match
         case Nil => Right(result)
         case node :: rest =>
-          eval(node) match
+          eval(node, env) match
             case Left(error) => Left(error)
-            case Right(returnValue @ MonkeyObject.ReturnValue(value)) =>
+            case Right(returnValue @ MonkeyObject.ReturnValue(value), _) =>
               Right(Some(returnValue))
-            case Right(result) => evalBlock(rest, Some(result))
+            case Right(result, env) => evalBlock(rest, env, Some(result))
 
-    evalBlock(nodes, None).map(_.getOrElse(MonkeyObject.Null))
+    evalBlock(nodes, env, None).map(_.getOrElse(MonkeyObject.Null))
 
   private def evalIfExpression(
       condition: Expression,
       consequence: Statement.Block,
-      alternative: Option[Statement.Block]
+      alternative: Option[Statement.Block],
+      env: Environment
   ) =
-    eval(condition).flatMap: condValue =>
+    eval(condition, env).flatMap: (condValue, _) =>
       if MonkeyObject.isTruthy(condValue)
-      then eval(consequence)
-      else alternative.map(eval).getOrElse(Right(MonkeyObject.Null))
+      then
+        eval(consequence, env).map: (result, _) =>
+          result
+      else
+        alternative
+          .map: alt =>
+            eval(alt, env).map: (result, _) =>
+              result
+          .getOrElse(Right(MonkeyObject.Null))
 
   private def evalPrefixExpression(
       token: Token,
       expr: Expression,
-      node: Node
+      node: Node,
+      env: Environment
   ) =
     token match
       case Token.Bang =>
-        eval(expr).map: value =>
+        eval(expr, env).map: (value, _) =>
           MonkeyObject.of(!MonkeyObject.isTruthy(value))
       case Token.Minus =>
-        eval(expr).flatMap:
-          case MonkeyObject.IntegerLiteral(value) =>
+        eval(expr, env).flatMap:
+          case (MonkeyObject.IntegerLiteral(value), _) =>
             Right(MonkeyObject.IntegerLiteral(-value))
           case _ => Left(EvalutationError.InvalidSyntax(node))
       case _ => Left(EvalutationError.InvalidSyntax(node))
@@ -87,12 +132,13 @@ object Eval:
       left: Expression,
       token: Token,
       right: Expression,
-      node: Node
+      node: Node,
+      env: Environment
   ) =
-    (eval(left), eval(right)) match
+    (eval(left, env), eval(right, env)) match
       case (
-            Right(MonkeyObject.IntegerLiteral(leftVal)),
-            Right(MonkeyObject.IntegerLiteral(rightVal))
+            Right(MonkeyObject.IntegerLiteral(leftVal), _),
+            Right(MonkeyObject.IntegerLiteral(rightVal), _)
           ) =>
         token match
           case Token.Plus =>
@@ -113,8 +159,8 @@ object Eval:
             Right(MonkeyObject.of(leftVal > rightVal))
           case _ => Left(EvalutationError.InvalidSyntax(node))
       case (
-            Right(MonkeyObject.BooleanLiteral(leftVal)),
-            Right(MonkeyObject.BooleanLiteral(rightVal))
+            Right(MonkeyObject.BooleanLiteral(leftVal), _),
+            Right(MonkeyObject.BooleanLiteral(rightVal), _)
           ) =>
         token match
           case Token.Equal    => Right(MonkeyObject.of(leftVal == rightVal))

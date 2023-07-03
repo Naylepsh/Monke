@@ -4,17 +4,23 @@ import AST.Node.given
 import MonkeyObject.given
 
 object Repl:
+  def run: Unit = run(Eval.Environment.empty)
+
   @annotation.tailrec
-  def run: Unit =
+  private def run(env: Eval.Environment): Unit =
     val line   = readLine(">>")
     val tokens = Lexer.tokenize(line)
     val ast    = Parser.parse(tokens)
 
     ast match
-      case Left(errors) => errors.foreach(println)
+      case Left(errors) =>
+        errors.foreach(println)
+        run(env)
       case Right(program) =>
-        Eval.eval(program) match
-          case Left(error)  => println(error)
-          case Right(value) => println(value.show)
-
-    run
+        Eval.eval(program, env) match
+          case Left(error) =>
+            println(error)
+            run(env)
+          case Right(value, env) =>
+            println(value.show)
+            run(env)

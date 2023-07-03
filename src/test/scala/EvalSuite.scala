@@ -161,11 +161,8 @@ class EvalSuite extends ParametrizedSuite:
 
     assertEquals(result, Right(MonkeyObject.IntegerLiteral(expected)))
 
-    /*
-     * */
-
   parametrizedTest(
-    "Eval invalid code",
+    "Eval invalid syntax code",
     List(
       TestParam(label = "Int + Boolean", input = ("5 + true;")),
       TestParam(label = "Int + Boolean", input = ("5 + true; 5;")),
@@ -184,6 +181,35 @@ class EvalSuite extends ParametrizedSuite:
       result.left.map(_.isInstanceOf[Eval.EvalutationError.InvalidSyntax]),
       Left(true)
     )
+
+  test("Eval undefined variable"):
+    val input = "foobar;"
+
+    val result = eval(input)
+
+    assertEquals(
+      result,
+      Left(Eval.EvalutationError.UndefinedIdentifier("foobar"))
+    )
+
+  parametrizedTest(
+    "Eval let statement",
+    List(
+      TestParam(label = "let a = 5; a;", input = ("let a = 5; a;", 5)),
+      TestParam(label = "let a = 5 * 5; a;", input = ("let a = 5 * 5; a;", 25)),
+      TestParam(
+        label = "let a = 5; let b = a; b;",
+        input = ("let a = 5; let b = a; b;", 5)
+      ),
+      TestParam(
+        label = "let a = 5; let b = a; let c = a + b + 5; c;",
+        input = ("let a = 5; let b = a; let c = a + b + 5; c;", 15)
+      )
+    )
+  ): (input, expected) =>
+    val result = eval(input)
+
+    assertEquals(result, Right(MonkeyObject.IntegerLiteral(expected)))
 
 object EvalSuite:
   def eval(input: String) =
