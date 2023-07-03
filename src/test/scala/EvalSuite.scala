@@ -161,6 +161,30 @@ class EvalSuite extends ParametrizedSuite:
 
     assertEquals(result, Right(MonkeyObject.IntegerLiteral(expected)))
 
+    /*
+     * */
+
+  parametrizedTest(
+    "Eval invalid code",
+    List(
+      TestParam(label = "Int + Boolean", input = ("5 + true;")),
+      TestParam(label = "Int + Boolean", input = ("5 + true; 5;")),
+      TestParam(label = "-Boolean", input = ("-true")),
+      TestParam(label = "Boolean + Boolean", input = ("true + false;")),
+      TestParam(label = "Boolean + Boolean", input = ("5; true + false; 5")),
+      TestParam(
+        label = "Boolean + Boolean",
+        input = ("if (10 > 1) { true + false; }")
+      )
+    )
+  ): (input) =>
+    val result = eval(input)
+
+    assertEquals(
+      result.left.map(_.isInstanceOf[Eval.EvalutationError.InvalidSyntax]),
+      Left(true)
+    )
+
 object EvalSuite:
   def eval(input: String) =
     Parser
