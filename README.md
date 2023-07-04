@@ -28,16 +28,24 @@ let add = fn(a, b) {
     return a + b;
 }
 let result = add(1, 2);
+
+let add2 = fn(a) { fn(b) { a + b }}
+let result2 = add2(1)(2)
+
+let factorial = fn(n) { if (n == 0) { 1 } else { n * fact(n - 1) } }
+
+let apply = fn(f) { fn(x) { f(x) } }
+let result3 = apply(fn(x) { x })(42)
 ```
 
-### Usage
+### REPL
 
-Currently only ~REPL~ RPPL is available. To run it execute `sbt run`.
+Execute `sbt run`.
 
 ### Misc.
 
 Interpretation is done with 3 distinct steps:
 - Lexer
 - Parser -- using Pratt Parsing
-- [TODO] Evaluator -- using Tree-walking interpreter
+- Evaluator -- using Tree-walking interpreter (meaning it's VERY slow)
 
