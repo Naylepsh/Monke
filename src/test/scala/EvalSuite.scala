@@ -211,13 +211,57 @@ class EvalSuite extends ParametrizedSuite:
 
     assertEquals(result, Right(MonkeyObject.IntegerLiteral(expected)))
 
+  test("Eval function definition"):
+    val input = "fn(x) { return x + 1; }"
+
+    val result = eval(input)
+
+    result match
+      case Right(MonkeyObject.FunctionLiteral(params, body, _)) =>
+        assertEquals(params.length, 1)
+        assertEquals(
+          params.head,
+          AST.Expression.Identifier("x").asInstanceOf[AST.Expression.Identifier]
+        )
+      case _ => assert(false, s"$result is not an expected func literal")
+
+  parametrizedTest(
+    "Eval function application",
+    List(
+      TestParam(
+        label = "let identity = fn(x) { x; }; identity(5);",
+        input = ("let identity = fn(x) { x; }; identity(5);", 5)
+      ),
+      TestParam(
+        label = "let identity = fn(x) { return x; }; identity(5);",
+        input = ("let identity = fn(x) { return x; }; identity(5);", 5)
+      ),
+      TestParam(
+        label = "let double = fn(x) { x * 2; }; double(5);",
+        input = ("let double = fn(x) { x * 2; }; double(5);", 10)
+      ),
+      TestParam(
+        label = "let add = fn(x, y) { x + y; }; add(5, 5);",
+        input = ("let add = fn(x, y) { x + y; }; add(5, 5);", 10)
+      ),
+      TestParam(
+        label = "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));",
+        input = ("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20)
+      ),
+      TestParam(label = "fn(x) { x; }(5)", input = ("fn(x) { x; }(5)", 5))
+    )
+  ): (input, expected) =>
+    val result = eval(input)
+
+    assertEquals(result, Right(MonkeyObject.IntegerLiteral(expected)))
+
 object EvalSuite:
   def eval(input: String) =
     Parser
       .parse(Lexer.tokenize(input))
       .map: tokens =>
         Eval
-          .eval(tokens, Eval.Environment.empty)
+          .eval(tokens, Environment.empty)
           .map: (result, _) =>
             result
       // Theoretically unsafe, but in this test suite we don't care about parsing failures

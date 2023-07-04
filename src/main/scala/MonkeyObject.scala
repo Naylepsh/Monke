@@ -1,6 +1,11 @@
 enum MonkeyObject:
-  case IntegerLiteral(value: Int)       extends MonkeyObject
-  case BooleanLiteral(value: Boolean)   extends MonkeyObject
+  case IntegerLiteral(value: Int)     extends MonkeyObject
+  case BooleanLiteral(value: Boolean) extends MonkeyObject
+  case FunctionLiteral(
+      parameters: List[AST.Expression.Identifier],
+      block: AST.Statement.Block,
+      env: Environment
+  )                                     extends MonkeyObject
   case Null                             extends MonkeyObject
   case ReturnValue(value: MonkeyObject) extends MonkeyObject
 
@@ -19,10 +24,13 @@ object MonkeyObject:
   private val TRUE  = MonkeyObject.BooleanLiteral(true)
   private val FALSE = MonkeyObject.BooleanLiteral(false)
 
-  given Show[MonkeyObject] with
+  given showMonkey(using showNode: Show[AST.Node]): Show[MonkeyObject] with
     def show(o: MonkeyObject): String =
       o match
         case IntegerLiteral(value) => value.toString
         case BooleanLiteral(value) => value.toString
         case Null                  => "null"
         case ReturnValue(value)    => s"return ${show(value)}"
+        case FunctionLiteral(params, body, _) =>
+          val ps = params.map(showNode.show).mkString(", ")
+          s"fn($ps) ${showNode.show(body)}"

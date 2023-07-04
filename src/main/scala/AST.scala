@@ -51,7 +51,7 @@ object AST:
             s"return ${show(expression)}"
           case Statement.Expr(expression) => show(expression)
           case Statement.Block(nodes) =>
-            nodes.map(show).mkString("{", "\n", "}")
+            nodes.map(show).mkString("{ ", "\n", " }")
 
   case class Program(nodes: List[Node])
   object Program:

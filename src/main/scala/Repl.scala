@@ -4,10 +4,10 @@ import AST.Node.given
 import MonkeyObject.given
 
 object Repl:
-  def run: Unit = run(Eval.Environment.empty)
+  def run: Unit = run(Environment.empty)
 
   @annotation.tailrec
-  private def run(env: Eval.Environment): Unit =
+  private def run(env: Environment): Unit =
     val line   = readLine(">>")
     val tokens = Lexer.tokenize(line)
     val ast    = Parser.parse(tokens)
