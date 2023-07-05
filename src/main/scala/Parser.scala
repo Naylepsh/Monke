@@ -29,6 +29,7 @@ object Parser:
     case InvalidFunctionParameters(tokens: List[Token]) extends ParsingError
     case InvalidCallArguments(tokens: List[Token])      extends ParsingError
     case InvalidBlock(tokens: List[Token])              extends ParsingError
+    case UnclosedArray(tokens: List[Token])             extends ParsingError
 
   def parse(tokens: List[Token]): Either[List[ParsingError], Program] =
     parse(tokens, List.empty, List.empty).map(Program(_))
@@ -126,9 +127,35 @@ object Parser:
           case (expression, Token.RightParen :: rest) =>
             Right(expression -> rest)
           case _ => Left(List(ParsingError.InvalidExpression(all)))
-      case all @ Token.If :: _   => parseIfExpression(all)
-      case all @ Token.Func :: _ => parseFunctionExpression(all)
-      case token :: rest         => Left(List(ParsingError.NoPrefixExpression(token)))
+      case all @ Token.LeftBracket :: _ => parseArrayExpression(all)
+      case all @ Token.If :: _          => parseIfExpression(all)
+      case all @ Token.Func :: _        => parseFunctionExpression(all)
+      case token :: rest                => Left(List(ParsingError.NoPrefixExpression(token)))
+
+  private def parseArrayExpression(tokens: List[Token]) =
+    @annotation.tailrec
+    def parseArray(
+        currentTokens: List[Token],
+        items: List[Expression]
+    ): Either[List[ParsingError], (Expression.ArrayLiteral, List[Token])] =
+      currentTokens match
+        case Nil => Left(List(ParsingError.UnclosedArray(tokens)))
+        case Token.RightBracket :: rest =>
+          Right(Expression.ArrayLiteral(items.reverse.toArray) -> rest)
+        case other => parseExpression(other, Precedence.Lowest) match
+            case Left(errors) => Left(errors)
+            case Right(expr, Token.Comma :: leftoverTokens) =>
+              parseArray(leftoverTokens, expr :: items)
+            case Right(expr, Token.RightBracket :: leftoverTokens) => Right(
+                Expression.ArrayLiteral(
+                  (expr :: items).reverse.toArray
+                ) -> leftoverTokens
+              )
+            case _ => Left(List(ParsingError.InvalidExpression(tokens)))
+
+    tokens match
+      case _ :: rest => parseArray(rest, List.empty)
+      case _         => Left(List(ParsingError.InvalidExpression(tokens)))
 
   private def parseIfExpression(tokens: List[Token]) =
     tokens match

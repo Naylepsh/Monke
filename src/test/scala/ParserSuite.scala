@@ -98,6 +98,37 @@ class ParserSuite extends ParametrizedSuite:
 
     assertEquals(ast, expected)
 
+  test("Parse array expression"):
+    val input = "[1, 2 * 2, 3 + 3];"
+    val expected =
+      Right(
+        List(
+          Expression.IntegerLiteral(1),
+          Expression.InfixOperator(
+            Expression.IntegerLiteral(2),
+            Token.Asterisk,
+            Expression.IntegerLiteral(2)
+          ),
+          Expression.InfixOperator(
+            Expression.IntegerLiteral(3),
+            Token.Plus,
+            Expression.IntegerLiteral(3)
+          )
+        )
+      )
+
+    val tokens = Lexer.tokenize(input)
+    val ast    = parse(tokens)
+
+    assertEquals(
+      ast.map(
+        _.nodes.flatMap(_.asInstanceOf[Statement.Expr].expression.asInstanceOf[
+          Expression.ArrayLiteral
+        ].items.toList)
+      ),
+      expected
+    )
+
   parametrizedTest(
     "Parse prefix expression",
     List(
