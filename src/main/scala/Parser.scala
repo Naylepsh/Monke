@@ -28,7 +28,7 @@ object Parser:
     case InvalidFunctionExpression(tokens: List[Token]) extends ParsingError
     case InvalidFunctionParameters(tokens: List[Token]) extends ParsingError
     case InvalidCallArguments(tokens: List[Token])      extends ParsingError
-    case InvalidBlock(tokens: List[Token]) extends ParsingError
+    case InvalidBlock(tokens: List[Token])              extends ParsingError
 
   def parse(tokens: List[Token]): Either[List[ParsingError], Program] =
     parse(tokens, List.empty, List.empty).map(Program(_))
@@ -111,6 +111,8 @@ object Parser:
         value.toIntOption match
           case None      => Left(List(ParsingError.InvalidInteger(value)))
           case Some(int) => Right(Expression.IntegerLiteral(int) -> rest)
+      case Token.Str(value) :: rest =>
+        Right(Expression.StringLiteral(value) -> rest)
       case Token.True :: rest =>
         Right(Expression.BooleanLiteral(true) -> rest)
       case Token.False :: rest =>

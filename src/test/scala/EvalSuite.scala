@@ -67,6 +67,20 @@ class EvalSuite extends ParametrizedSuite:
     assertEquals(result, Right(MonkeyObject.BooleanLiteral(expectedValue)))
 
   parametrizedTest(
+    "Eval string expression",
+    List(
+      TestParam(label = """"foo"""", input = (""""foo"""", "foo")),
+      TestParam(
+        label = """"foo" + "bar"""",
+        input = (""""foo" + "bar"""", "foobar")
+      )
+    )
+  ): (input, expectedValue) =>
+    val result = eval(input)
+
+    assertEquals(result, Right(MonkeyObject.StringLiteral(expectedValue)))
+
+  parametrizedTest(
     "Eval empty program",
     List(
       TestParam(label = "", input = ""),

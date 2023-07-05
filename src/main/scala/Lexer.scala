@@ -34,6 +34,12 @@ object Lexer:
           case "false"  => Token.False
           case other    => Token.Identifier(other)
         token -> leftoverChars
+      case '"' :: rest =>
+        // TODO: Add a better error handling
+        peekString(rest)
+          .map: (str, leftoverInput) =>
+            Token.Str(str) -> leftoverInput
+          .getOrElse(Token.Illegal -> List.empty)
       case other :: rest =>
         println(s"Illegal char: $other")
         Token.Illegal -> rest
@@ -47,6 +53,9 @@ object Lexer:
   private val identifierChars = (('a' to 'z') ++ ('A' to 'Z') ++ Seq('_')).toSet
   private val peekInteger     = peekText(_.isDigit)
   private val peekIdentifier  = peekText(identifierChars.contains)
+  private val peekString = peekText(_ != '"').andThen:
+    case (str, '"' :: leftoverInput) => Some(str, leftoverInput)
+    case _                           => None
 
   def peekText(predicate: Char => Boolean)(input: List[Char])
       : (String, List[Char]) =

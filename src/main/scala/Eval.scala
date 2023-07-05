@@ -40,6 +40,8 @@ object Eval:
         Right(MonkeyObject.IntegerLiteral(value), env)
       case Expression.BooleanLiteral(value) =>
         Right(MonkeyObject.of(value), env)
+      case Expression.StringLiteral(value) =>
+        Right(MonkeyObject.StringLiteral(value), env)
       case Expression.Identifier(identifier) =>
         env.find(identifier) match
           case None        => Left(EvalutationError.UndefinedIdentifier(identifier))
@@ -198,4 +200,9 @@ object Eval:
           case Token.Equal    => Right(MonkeyObject.of(leftVal == rightVal))
           case Token.NotEqual => Right(MonkeyObject.of(leftVal != rightVal))
           case _              => Left(EvalutationError.InvalidSyntax(node))
+      case (
+            Right(MonkeyObject.StringLiteral(leftVal), _),
+            Right(MonkeyObject.StringLiteral(rightVal), _)
+          ) =>
+        Right(MonkeyObject.StringLiteral(leftVal + rightVal))
       case _ => Left(EvalutationError.InvalidSyntax(node))

@@ -88,6 +88,16 @@ class ParserSuite extends ParametrizedSuite:
 
     assertEquals(ast, Right(Program(List(expected))))
 
+  test("Parse string expression statement"):
+    val input = """"foobar";"""
+    val expected =
+      Right(Program(List(Statement.Expr(Expression.StringLiteral("foobar")))))
+
+    val tokens = Lexer.tokenize(input)
+    val ast    = parse(tokens)
+
+    assertEquals(ast, expected)
+
   parametrizedTest(
     "Parse prefix expression",
     List(
@@ -507,48 +517,64 @@ class ParserSuite extends ParametrizedSuite:
       )
     )
 
-  parametrizedTest("Parse call expression",
+  parametrizedTest(
+    "Parse call expression",
     List(
-      TestParam(label = "0 args", input = ("sum()", Expression.Identifier("sum"), List.empty)),
-      TestParam(label = "1 args", input = (
-        "sum(x)",
-        Expression.Identifier("sum"),
-        List(Expression.Identifier("x"))
-      )),
-      TestParam(label = "2 args", input = (
-        "sum(x, y)",
-        Expression.Identifier("sum"),
-        List(Expression.Identifier("x"), Expression.Identifier("y"))
-      )),
-      TestParam(label = "2 args where one is expression", input = (
-        "sum(x, y + z)",
-        Expression.Identifier("sum"),
-        List(
-          Expression.Identifier("x"),
-          Expression.InfixOperator(
-            Expression.Identifier("y"),
-            Token.Plus,
-            Expression.Identifier("z")
+      TestParam(
+        label = "0 args",
+        input = ("sum()", Expression.Identifier("sum"), List.empty)
+      ),
+      TestParam(
+        label = "1 args",
+        input = (
+          "sum(x)",
+          Expression.Identifier("sum"),
+          List(Expression.Identifier("x"))
+        )
+      ),
+      TestParam(
+        label = "2 args",
+        input = (
+          "sum(x, y)",
+          Expression.Identifier("sum"),
+          List(Expression.Identifier("x"), Expression.Identifier("y"))
+        )
+      ),
+      TestParam(
+        label = "2 args where one is expression",
+        input = (
+          "sum(x, y + z)",
+          Expression.Identifier("sum"),
+          List(
+            Expression.Identifier("x"),
+            Expression.InfixOperator(
+              Expression.Identifier("y"),
+              Token.Plus,
+              Expression.Identifier("z")
+            )
           )
         )
-      )),
-      TestParam(label = "immediately invoked function", input = (
-        "fn(x) { return x; }(42)",
-        Expression.Func(
-          List(Expression.Identifier("x")),
-          Statement.Block(List(Statement.Return(Expression.Identifier("x"))))
-        ),
-        List(Expression.IntegerLiteral(42))
-      ))
+      ),
+      TestParam(
+        label = "immediately invoked function",
+        input = (
+          "fn(x) { return x; }(42)",
+          Expression.Func(
+            List(Expression.Identifier("x")),
+            Statement.Block(List(Statement.Return(Expression.Identifier("x"))))
+          ),
+          List(Expression.IntegerLiteral(42))
+        )
       )
+    )
   ): (input, expectedFunc, expectedArgs) =>
-      val tokens = Lexer.tokenize(input)
-      val ast    = parse(tokens)
+    val tokens = Lexer.tokenize(input)
+    val ast    = parse(tokens)
 
-      assertEquals(
-        ast,
-        Right(Program(List(Statement.Expr(Expression.Call(
-          expectedFunc,
-          expectedArgs
-        )))))
-      )
+    assertEquals(
+      ast,
+      Right(Program(List(Statement.Expr(Expression.Call(
+        expectedFunc,
+        expectedArgs
+      )))))
+    )

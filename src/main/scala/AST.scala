@@ -3,6 +3,7 @@ object AST:
     case Identifier(value: String)      extends Expression
     case IntegerLiteral(value: Int)     extends Expression
     case BooleanLiteral(value: Boolean) extends Expression
+    case StringLiteral(value: String)   extends Expression
     case PrefixOperator(token: Token, expression: Expression)
         extends Expression
     case InfixOperator(left: Expression, token: Token, right: Expression)
@@ -31,6 +32,7 @@ object AST:
           case Expression.Identifier(value)     => value
           case Expression.IntegerLiteral(value) => value.toString
           case Expression.BooleanLiteral(value) => value.toString
+          case Expression.StringLiteral(value)  => value
           case Expression.PrefixOperator(token, expression) =>
             s"(${showToken.show(token)}${show(expression)})"
           case Expression.InfixOperator(left, token, right) =>

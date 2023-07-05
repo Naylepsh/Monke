@@ -4,6 +4,7 @@ enum Token:
   // Items
   case Identifier(value: String) extends Token
   case Integer(value: String)    extends Token
+  case Str(value: String)        extends Token
   // Operators
   case Assign      extends Token
   case Plus        extends Token
@@ -39,6 +40,7 @@ object Token:
         case EOF                       => ""
         case Identifier(value: String) => value
         case Integer(value: String)    => value
+        case Str(value: String)        => value
         case Assign                    => "="
         case Plus                      => "+"
         case Minus                     => "-"

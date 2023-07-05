@@ -1,6 +1,7 @@
 enum MonkeyObject:
   case IntegerLiteral(value: Int)     extends MonkeyObject
   case BooleanLiteral(value: Boolean) extends MonkeyObject
+  case StringLiteral(value: String)   extends MonkeyObject
   case FunctionLiteral(
       parameters: List[AST.Expression.Identifier],
       block: AST.Statement.Block,
@@ -29,6 +30,7 @@ object MonkeyObject:
       o match
         case IntegerLiteral(value) => value.toString
         case BooleanLiteral(value) => value.toString
+        case StringLiteral(value)  => value
         case Null                  => "null"
         case ReturnValue(value)    => s"return ${show(value)}"
         case FunctionLiteral(params, body, _) =>
