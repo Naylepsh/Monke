@@ -80,6 +80,23 @@ class EvalSuite extends ParametrizedSuite:
 
     assertEquals(result, Right(MonkeyObject.StringLiteral(expectedValue)))
 
+  test("Eval array literal"):
+    val input = "[1, 2 * 2, 3 + 3]"
+    val expected = Right(
+      List(
+        MonkeyObject.IntegerLiteral(1),
+        MonkeyObject.IntegerLiteral(4),
+        MonkeyObject.IntegerLiteral(6)
+      )
+    )
+
+    val result = eval(input)
+
+    assertEquals(
+      result.map(_.asInstanceOf[MonkeyObject.ArrayLiteral].value.toList),
+      expected
+    )
+
   parametrizedTest(
     "Eval empty program",
     List(

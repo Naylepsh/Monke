@@ -42,6 +42,9 @@ object Eval:
         Right(MonkeyObject.of(value), env)
       case Expression.StringLiteral(value) =>
         Right(MonkeyObject.StringLiteral(value), env)
+      case Expression.ArrayLiteral(items) =>
+        evalArray(items, env).map: result =>
+          (result, env)
       case Expression.Identifier(identifier) =>
         env.find(identifier) match
           case None        => Left(EvalutationError.UndefinedIdentifier(identifier))
@@ -70,6 +73,18 @@ object Eval:
         Right(MonkeyObject.FunctionLiteral(params, body, env), env)
       case Expression.Call(func, args) =>
         evalFunctionCall(func, args, env)
+
+  private def evalArray(items: Array[Expression], env: Environment) =
+    def doEval(
+        items: List[Expression],
+        acc: List[MonkeyObject]
+    ): Either[EvalutationError, MonkeyObject.ArrayLiteral] =
+      items match
+        case Nil => Right(MonkeyObject.ArrayLiteral(acc.reverse.toArray))
+        case item :: rest => eval(item, env).flatMap: (item, _) =>
+            doEval(rest, item :: acc)
+
+    doEval(items.toList, List.empty)
 
   private def evalFunctionCall(
       func: Expression,
