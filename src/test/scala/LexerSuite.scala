@@ -98,7 +98,8 @@ class LexerSuite extends munit.FunSuite:
     |10 == 10;
     |10 != 9;
     |"foobar";
-    |"foo bar";""".stripMargin
+    |"foo bar";
+    |[1, 2];""".stripMargin
     val expected = List(
       Token.Bang,
       Token.Minus,
@@ -140,6 +141,12 @@ class LexerSuite extends munit.FunSuite:
       Token.Str("foobar"),
       Token.Semicolon,
       Token.Str("foo bar"),
+      Token.Semicolon,
+      Token.LeftBracket,
+      Token.Integer("1"),
+      Token.Comma,
+      Token.Integer("2"),
+      Token.RightBracket,
       Token.Semicolon,
       Token.EOF
     )

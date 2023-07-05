@@ -1,23 +1,25 @@
 object Lexer:
   def nextToken(input: List[Char]): (Token, List[Char]) =
     input match
-      case Nil                               => Token.EOF         -> input
-      case '=' :: '=' :: rest                => Token.Equal       -> rest
-      case '!' :: '=' :: rest                => Token.NotEqual    -> rest
-      case '=' :: rest                       => Token.Assign      -> rest
-      case '+' :: rest                       => Token.Plus        -> rest
-      case '-' :: rest                       => Token.Minus       -> rest
-      case '!' :: rest                       => Token.Bang        -> rest
-      case '/' :: rest                       => Token.Slash       -> rest
-      case '*' :: rest                       => Token.Asterisk    -> rest
-      case '<' :: rest                       => Token.LesserThan  -> rest
-      case '>' :: rest                       => Token.GreaterThan -> rest
-      case ',' :: rest                       => Token.Comma       -> rest
-      case ';' :: rest                       => Token.Semicolon   -> rest
-      case '(' :: rest                       => Token.LeftParen   -> rest
-      case ')' :: rest                       => Token.RightParen  -> rest
-      case '{' :: rest                       => Token.LeftBrace   -> rest
-      case '}' :: rest                       => Token.RightBrace  -> rest
+      case Nil                               => Token.EOF          -> input
+      case '=' :: '=' :: rest                => Token.Equal        -> rest
+      case '!' :: '=' :: rest                => Token.NotEqual     -> rest
+      case '=' :: rest                       => Token.Assign       -> rest
+      case '+' :: rest                       => Token.Plus         -> rest
+      case '-' :: rest                       => Token.Minus        -> rest
+      case '!' :: rest                       => Token.Bang         -> rest
+      case '/' :: rest                       => Token.Slash        -> rest
+      case '*' :: rest                       => Token.Asterisk     -> rest
+      case '<' :: rest                       => Token.LesserThan   -> rest
+      case '>' :: rest                       => Token.GreaterThan  -> rest
+      case ',' :: rest                       => Token.Comma        -> rest
+      case ';' :: rest                       => Token.Semicolon    -> rest
+      case '(' :: rest                       => Token.LeftParen    -> rest
+      case ')' :: rest                       => Token.RightParen   -> rest
+      case '[' :: rest                       => Token.LeftBracket  -> rest
+      case ']' :: rest                       => Token.RightBracket -> rest
+      case '{' :: rest                       => Token.LeftBrace    -> rest
+      case '}' :: rest                       => Token.RightBrace   -> rest
       case char :: rest if char.isWhitespace => nextToken(eatWhitespace(rest))
       case all @ char :: _ if char.isDigit =>
         val (int, leftoverInput) = peekInteger(all)

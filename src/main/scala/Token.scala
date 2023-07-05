@@ -17,12 +17,14 @@ enum Token:
   case GreaterThan extends Token
   case LesserThan  extends Token
   // Delimiters
-  case Comma      extends Token
-  case Semicolon  extends Token
-  case LeftParen  extends Token
-  case RightParen extends Token
-  case LeftBrace  extends Token
-  case RightBrace extends Token
+  case Comma        extends Token
+  case Semicolon    extends Token
+  case LeftParen    extends Token
+  case RightParen   extends Token
+  case LeftBracket  extends Token
+  case RightBracket extends Token
+  case LeftBrace    extends Token
+  case RightBrace   extends Token
   // Keywords
   case Func   extends Token
   case Let    extends Token
@@ -55,6 +57,8 @@ object Token:
         case Semicolon                 => ";"
         case LeftParen                 => "("
         case RightParen                => ")"
+        case LeftBracket               => "["
+        case RightBracket              => "]"
         case LeftBrace                 => "{"
         case RightBrace                => "}"
         case Func                      => "fn"

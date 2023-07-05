@@ -1,9 +1,9 @@
 object AST:
   enum Expression:
-    case Identifier(value: String)      extends Expression
-    case IntegerLiteral(value: Int)     extends Expression
-    case BooleanLiteral(value: Boolean) extends Expression
-    case StringLiteral(value: String)   extends Expression
+    case Identifier(value: String)              extends Expression
+    case IntegerLiteral(value: Int)             extends Expression
+    case BooleanLiteral(value: Boolean)         extends Expression
+    case StringLiteral(value: String)           extends Expression
     case PrefixOperator(token: Token, expression: Expression)
         extends Expression
     case InfixOperator(left: Expression, token: Token, right: Expression)
