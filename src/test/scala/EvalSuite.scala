@@ -97,6 +97,97 @@ class EvalSuite extends ParametrizedSuite:
       expected
     )
 
+  /**
+   */
+
+  parametrizedTest(
+    "Eval index out of bounds array index expression",
+    List(
+      TestParam(
+        label = "[1, 2, 3][3]",
+        input = "[1, 2, 3][3]"
+      ),
+      TestParam(
+        label = "[1, 2, 3][-1]",
+        input = "[1, 2, 3][-1]"
+      )
+    )
+  ): (input) =>
+    val result = eval(input)
+
+    result match
+      case Left(error) => assert(
+          error.isInstanceOf[Eval.EvalutationError.IndexOutOfBounds],
+          s"$error is not of type IndexOutOfBounds"
+        )
+      case other => assert(false, s"$result should be an error")
+
+  parametrizedTest(
+    "Eval array index expression",
+    List(
+      TestParam(
+        label = "[1, 2, 3][0]",
+        input = (
+          "[1, 2, 3][0]",
+          1
+        )
+      ),
+      TestParam(
+        label = "[1, 2, 3][1]",
+        input = (
+          "[1, 2, 3][1]",
+          2
+        )
+      ),
+      TestParam(
+        label = "[1, 2, 3][2]",
+        input = (
+          "[1, 2, 3][2]",
+          3
+        )
+      ),
+      TestParam(
+        label = "let i = 0; [1][i];",
+        input = (
+          "let i = 0; [1][i];",
+          1
+        )
+      ),
+      TestParam(
+        label = "[1, 2, 3][1 + 1];",
+        input = (
+          "[1, 2, 3][1 + 1];",
+          3
+        )
+      ),
+      TestParam(
+        label = "let myArray = [1, 2, 3]; myArray[2];",
+        input = (
+          "let myArray = [1, 2, 3]; myArray[2];",
+          3
+        )
+      ),
+      TestParam(
+        label =
+          "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+        input = (
+          "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+          6
+        )
+      ),
+      TestParam(
+        label = "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+        input = (
+          "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+          2
+        )
+      )
+    )
+  ): (input, expectedValue) =>
+    val result = eval(input)
+
+    assertEquals(result, Right(MonkeyObject.IntegerLiteral(expectedValue)))
+
   parametrizedTest(
     "Eval empty program",
     List(

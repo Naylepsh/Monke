@@ -5,6 +5,10 @@ object Eval:
     case InvalidSyntax(node: Node)            extends EvalutationError
     case UndefinedIdentifier(name: String)    extends EvalutationError
     case UncallableValue(value: MonkeyObject) extends EvalutationError
+    case IndexOutOfBounds(item: MonkeyObject, index: MonkeyObject)
+        extends EvalutationError
+    case ItemNotSubscriptable(item: MonkeyObject) extends EvalutationError
+    case InvalidIndexValue(index: MonkeyObject)   extends EvalutationError
 
   def eval(
       program: AST.Program,
@@ -73,6 +77,24 @@ object Eval:
         Right(MonkeyObject.FunctionLiteral(params, body, env), env)
       case Expression.Call(func, args) =>
         evalFunctionCall(func, args, env)
+      case Expression.Index(left, index) =>
+        evalIndex(left, index, env)
+
+  private def evalIndex(left: Expression, index: Node, env: Environment) =
+    eval(left, env).flatMap: (leftVal, _) =>
+      eval(index, env).flatMap: (indexVal, _) =>
+        (leftVal, indexVal) match
+          case (
+                xs @ MonkeyObject.ArrayLiteral(items),
+                index @ MonkeyObject.IntegerLiteral(i)
+              ) =>
+            if 0 <= i && i < items.length
+            then Right(items(i), env)
+            else Left(EvalutationError.IndexOutOfBounds(xs, index))
+          case (MonkeyObject.ArrayLiteral(_), index) =>
+            Left(EvalutationError.InvalidIndexValue(index))
+          case (item, _) =>
+            Left(EvalutationError.ItemNotSubscriptable(item))
 
   private def evalArray(items: Array[Expression], env: Environment) =
     def doEval(
