@@ -2,7 +2,7 @@ object Parser:
   import AST.*
 
   enum Precedence:
-    case Lowest, Equals, LessGreater, Sum, Product, Prefix, Call
+    case Lowest, Equals, LessGreater, Sum, Product, Prefix, Call, Index
 
     def >=(other: Precedence): Boolean = this.ordinal >= other.ordinal
 
@@ -14,6 +14,7 @@ object Parser:
         case (Token.Plus | Token.Minus)             => Sum
         case (Token.Asterisk | Token.Slash)         => Product
         case Token.LeftParen                        => Call
+        case Token.LeftBracket                      => Index
         case _                                      => Lowest
 
   enum ParsingError:
@@ -265,7 +266,18 @@ object Parser:
       case all @ Token.LeftParen :: _ =>
         parseCallArguments(all).map: (args, leftoverTokens) =>
           Expression.Call(left, args) -> leftoverTokens
-      case token :: _ => Left(List(ParsingError.NoInfixExpression(token)))
+      case all @ Token.LeftBracket :: _ => parseIndex(left, all)
+      case token :: _                   => Left(List(ParsingError.NoInfixExpression(token)))
+
+  private def parseIndex(left: Expression, tokens: List[Token]) =
+    tokens match
+      case _ :: rest =>
+        parseExpression(rest, Precedence.Lowest).flatMap:
+          case (index, Token.RightBracket :: leftoverTokens) =>
+            Right(Expression.Index(left, index) -> leftoverTokens)
+          case (_, leftoverTokens) =>
+            Left(List(ParsingError.UnclosedArray(leftoverTokens)))
+      case _ => Left(List(ParsingError.InvalidExpression(tokens)))
 
   private def parseCallArguments(tokens: List[Token]) =
     @annotation.tailrec

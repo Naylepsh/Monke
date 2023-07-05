@@ -18,6 +18,8 @@ object AST:
         extends Expression
     case Call(function: Expression, arguments: List[Expression])
         extends Expression
+    case Index(left: Expression, index: Expression | Statement)
+        extends Expression
 
   enum Statement:
     case Let(identifier: String, expression: Expression) extends Statement
@@ -50,6 +52,8 @@ object AST:
           case Expression.Call(func, arguments) =>
             val args = arguments.map(show).mkString(", ")
             s"${show(func)}($args)"
+          case Expression.Index(left, index) =>
+            s"${show(left)}[${show(index)}]"
           case Statement.Let(identifier, expression) =>
             s"let $identifier = ${show(expression)}"
           case Statement.Return(expression) =>

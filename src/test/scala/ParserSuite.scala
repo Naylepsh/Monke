@@ -129,6 +129,24 @@ class ParserSuite extends ParametrizedSuite:
       expected
     )
 
+  test("Parse index expression"):
+    val input = "xs[1 + 1]"
+    val expected = Right(Program(List(Statement.Expr(
+      Expression.Index(
+        Expression.Identifier("xs"),
+        (Expression.InfixOperator(
+          Expression.IntegerLiteral(1),
+          Token.Plus,
+          Expression.IntegerLiteral(1)
+        ))
+      )
+    ))))
+
+    val tokens = Lexer.tokenize(input)
+    val ast    = parse(tokens)
+
+    assertEquals(ast, expected)
+
   parametrizedTest(
     "Parse prefix expression",
     List(
