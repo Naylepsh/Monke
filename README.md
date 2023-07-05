@@ -11,6 +11,13 @@ let a = 42;
 let b = true;
 ```
 
+#### Arrays
+
+```
+let xs = [1, 2, 3];
+let head = xs[0];
+```
+
 #### If expressions
 
 ```
