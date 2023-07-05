@@ -97,9 +97,6 @@ class EvalSuite extends ParametrizedSuite:
       expected
     )
 
-  /**
-   */
-
   parametrizedTest(
     "Eval index out of bounds array index expression",
     List(
