@@ -53,6 +53,6 @@ Execute `sbt run`.
 
 Interpretation is done with 3 distinct steps:
 - Lexer
-- Parser -- using Pratt Parsing
+- Parser -- using Pratt Parsing (recursive descent)
 - Evaluator -- using Tree-walking interpreter (meaning it's VERY slow)
 
